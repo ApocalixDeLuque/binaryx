@@ -1,6 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="92" height="92"><svg width="92" height="92" viewBox="0 0 92 92" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="8" y="8" width="76" height="76" rx="12" fill="#F5EEFF" stroke="#B79AFF" stroke-width="3"></rect>
-  <text x="46" y="56" text-anchor="middle" font-family="monospace" font-size="40" fill="#8F5BFF">$<tspan dx="0" dy="0">_</tspan></text>
-</svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
-@media (prefers-color-scheme: dark) { :root { filter: none; } }
-</style></svg>
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+	<title>9c3c14839824c27dd5317ada5a79f37c</title>
+	<defs>
+		<clipPath clipPathUnits="userSpaceOnUse" id="cp1">
+			<path d="m642.25-128.75v766.5h-766.51v-766.5z"/>
+		</clipPath>
+	</defs>
+	<style>
+		.s0 { fill: #232122 } 
+	</style>
+	<g id="Clip-Path" clip-path="url(#cp1)">
+		<g>
+			<path class="s0" d="m250.97 256.18c58.37-2.18 107.64 40.62 110.23 95.77 2.6 55.15-42.44 101.91-100.79 104.64-58.76 2.75-108.67-40.19-111.28-95.72-2.62-55.54 43.06-102.49 101.84-104.69zm7.37 139.97c23.16-1.72 40.49-20.82 38.75-42.71-1.73-21.89-21.88-38.34-45.06-36.77-23.28 1.57-40.79 20.72-39.04 42.72 1.74 22 22.07 38.48 45.35 36.76z"/>
+			<path class="s0" d="m180.95 53.83c35.17 0.84 70.57 0.25 105.76 0.09-0.22 60.51 1.74 121.37-0.28 181.82l-63.44 0.24-0.05-121.92q-20.95-0.21-41.91 0.05z"/>
+		</g>
+	</g>
+</svg>
