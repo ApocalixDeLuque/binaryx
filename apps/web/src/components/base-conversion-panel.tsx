@@ -1,5 +1,6 @@
 "use client";
 
+import BigNumber from "bignumber.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
 import type { ConversionResult, BaseType } from "@/lib/base-conversions";
@@ -8,6 +9,7 @@ import {
   getBaseNumber,
   formatDisplayValue,
 } from "@/lib/base-conversions";
+import { DecimalToBinary } from "./conversions/decimal-to-binary/index";
 
 interface BaseConversionPanelProps {
   result: ConversionResult;
@@ -49,7 +51,12 @@ export function BaseConversionPanel({
   const isNegative = result.isNegative || false;
   const intSteps = result.integerSteps || [];
   const fracSteps = result.fractionalSteps || [];
-  const initialInt = intSteps.length > 1 ? intSteps[1].quotient : 0;
+  const initialInt =
+    intSteps.length > 1
+      ? typeof intSteps[1].quotient === "object"
+        ? intSteps[1].quotient.toString()
+        : intSteps[1].quotient
+      : 0;
   const initialFrac = fracSteps.length > 0 ? fracSteps[0].value : 0;
   const intRemainders = intSteps.slice(1).map((s) => s.remainder);
   const intBinaryMagnitude = intRemainders.length
@@ -508,11 +515,24 @@ export function BaseConversionPanel({
               </h3>
             </div>
             <div className="p-4">
-              {/* Decimal to Octal/Hex/Binary with specific table format */}
+              {/* Use dedicated component for decimal to binary */}
               {result.inputBase === "decimal" &&
-                ["octal", "hexadecimal", "binary"].includes(
-                  result.outputBase
-                ) &&
+                result.outputBase === "binary" && (
+                  <DecimalToBinary
+                    result={result}
+                    input={result.input}
+                    error={null}
+                    manualNegativeWarning={null}
+                    onInputChange={() => {}}
+                    onClear={() => {}}
+                    onCopy={() => {}}
+                    copySuccess={false}
+                  />
+                )}
+
+              {/* Other decimal conversions (octal/hex) with original logic */}
+              {result.inputBase === "decimal" &&
+                ["octal", "hexadecimal"].includes(result.outputBase) &&
                 intSteps.length > 1 && (
                   <div className="mb-3">
                     <div className="text-sm font-medium mb-3">
@@ -540,14 +560,23 @@ export function BaseConversionPanel({
                           {intSteps.map((step, i) => (
                             <tr key={i}>
                               <td className="px-2 py-1 border text-center font-mono">
-                                ({step.quotient})/
+                                (
+                                {typeof step.quotient === "object"
+                                  ? step.quotient.toString()
+                                  : step.quotient}
+                                )/
                                 {getBaseNumber(result.outputBase)}
                               </td>
                               <td className="px-2 py-1 border text-center font-mono">
-                                {Math.floor(
-                                  step.quotient /
-                                    getBaseNumber(result.outputBase)
-                                )}
+                                {typeof step.quotient === "object"
+                                  ? step.quotient
+                                      .div(getBaseNumber(result.outputBase))
+                                      .integerValue(BigNumber.ROUND_DOWN)
+                                      .toString()
+                                  : Math.floor(
+                                      step.quotient /
+                                        getBaseNumber(result.outputBase)
+                                    )}
                               </td>
                               <td className="px-2 py-1 border text-center font-mono">
                                 {step.remainder}
@@ -589,18 +618,6 @@ export function BaseConversionPanel({
                         )}
                       </code>
                     </div>
-
-                    {/* Format adaptation note for negative binary conversions */}
-                    {result.inputBase === "decimal" &&
-                      result.outputBase === "binary" &&
-                      result.isNegative && (
-                        <div className="mt-4">
-                          <div className="text-sm text-muted-foreground">
-                            Para números negativos, se adapta al formato de
-                            complemento a dos requerido.
-                          </div>
-                        </div>
-                      )}
 
                     {/* Endian information for hexadecimal conversions */}
                     {result.inputBase === "decimal" &&
@@ -2581,7 +2598,9 @@ export function BaseConversionPanel({
                                   {i + 1}
                                 </td>
                                 <td className="px-2 py-1 border text-center font-mono">
-                                  {step.quotient}
+                                  {typeof step.quotient === "object"
+                                    ? step.quotient.toString()
+                                    : step.quotient}
                                 </td>
                                 <td className="px-2 py-1 border text-center font-mono">
                                   {step.remainder}

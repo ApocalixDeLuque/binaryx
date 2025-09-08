@@ -1,104 +1,48 @@
+import BigNumber from "bignumber.js";
+
+// Configure BigNumber to preserve exact values for large numbers
+BigNumber.config({
+  DECIMAL_PLACES: 50,
+  EXPONENTIAL_AT: 1e9,
+});
+
+// Import modular conversion functions
+import {
+  decimalToBinary,
+  binaryToDecimal,
+  validateDecimalInput,
+  validateBinaryInput,
+} from "./conversions";
+
+// Import utilities
+import {
+  formatWithGrouping,
+  formatDisplayValue,
+  cleanFormattedValue,
+  formatDecimalOutput,
+} from "./utils/formatting-utils";
+import {
+  getBaseName,
+  getBaseNumber,
+  calculateMinBits,
+} from "./utils/calculation-helpers";
+
 export type BaseType = "binary" | "decimal" | "octal" | "hexadecimal";
 
-/**
- * Format a number with proper digit grouping based on the base
- */
-export function formatWithGrouping(value: string, base: BaseType): string {
-  if (!value || value === "0") return value;
+// Re-export formatting functions for backward compatibility
+export {
+  formatWithGrouping,
+  formatDisplayValue,
+  cleanFormattedValue,
+  formatDecimalOutput,
+} from "./utils/formatting-utils";
 
-  // Handle negative numbers
-  const isNegative = value.startsWith("-");
-  const absValue = isNegative ? value.slice(1) : value;
-
-  let formattedValue;
-  switch (base) {
-    case "binary":
-      // Group binary digits in groups of 4 from right to left
-      const result = [];
-      for (let i = absValue.length; i > 0; i -= 4) {
-        const start = Math.max(0, i - 4);
-        const group = absValue.slice(start, i);
-        result.unshift(group);
-      }
-      formattedValue = result.join(" ");
-      break;
-    case "octal":
-      // Group octal digits in groups of 3 from right to left
-      const octalResult = [];
-      for (let i = absValue.length; i > 0; i -= 3) {
-        const start = Math.max(0, i - 3);
-        const group = absValue.slice(start, i);
-        octalResult.unshift(group);
-      }
-      formattedValue = octalResult.join(" ");
-      break;
-    case "decimal":
-      // Add commas for thousands in decimal
-      formattedValue = absValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      break;
-    case "hexadecimal":
-      // Group hexadecimal digits in groups of 2 from right to left
-      const hexResult = [];
-      for (let i = absValue.length; i > 0; i -= 2) {
-        const start = Math.max(0, i - 2);
-        const group = absValue.slice(start, i);
-        hexResult.unshift(group);
-      }
-      formattedValue = hexResult.join(" ");
-      break;
-    default:
-      formattedValue = absValue;
-  }
-
-  // Return formatted value with negative sign if applicable
-  return isNegative ? "-" + formattedValue : formattedValue;
-}
-
-/**
- * Format a value with proper digit grouping for display (without spaces/commas removal)
- */
-export function formatDisplayValue(value: string, base: BaseType): string {
-  if (!value || value === "0") return value;
-
-  switch (base) {
-    case "binary":
-      // Group binary digits in groups of 4 from right to left
-      const result = [];
-      for (let i = value.length; i > 0; i -= 4) {
-        const start = Math.max(0, i - 4);
-        const group = value.slice(start, i);
-        result.unshift(group);
-      }
-      return result.join(" ");
-    case "octal":
-      // Group octal digits in groups of 3 from right to left
-      const octalResult = [];
-      for (let i = value.length; i > 0; i -= 3) {
-        const start = Math.max(0, i - 3);
-        const group = value.slice(start, i);
-        octalResult.unshift(group);
-      }
-      return octalResult.join(" ");
-    case "hexadecimal":
-      // Group hexadecimal digits in groups of 2 from right to left
-      const hexResult = [];
-      for (let i = value.length; i > 0; i -= 2) {
-        const start = Math.max(0, i - 2);
-        const group = value.slice(start, i);
-        hexResult.unshift(group);
-      }
-      return hexResult.join(" ");
-    default:
-      return value;
-  }
-}
-
-/**
- * Clean formatted values by removing spaces and commas for input parsing
- */
-export function cleanFormattedValue(value: string): string {
-  return value.replace(/[\s,]/g, "");
-}
+// Re-export calculation helpers for backward compatibility
+export {
+  calculateMinBits,
+  getBaseName,
+  getBaseNumber,
+} from "./utils/calculation-helpers";
 
 export interface ConversionStep {
   step: number;
@@ -117,7 +61,7 @@ export interface ConversionResult {
   intermediateSteps?: ConversionStep[];
   hasFractionalPart?: boolean;
   // Additional properties for detailed conversion tracking
-  integerSteps?: Array<{ quotient: number; remainder: number }>;
+  integerSteps?: Array<{ quotient: number | BigNumber; remainder: number }>;
   fractionalSteps?: Array<{ value: number; bit: number }>;
   isNegative?: boolean;
   magnitude?: string;
@@ -131,278 +75,47 @@ export interface ConversionResult {
   bitLengthWarning?: string;
 }
 
-/**
- * Calculate the minimum bits needed to represent a number in two's complement
- */
-function calculateMinBits(decimal: number): number {
-  if (decimal === 0) return 1;
+// calculateMinBits function moved to ./utils/calculation-helpers.ts
 
-  const absValue = Math.abs(decimal);
+// decimalToBinary function moved to ./conversions/decimal-to-binary.ts
 
-  // For two's complement, we always need at least 1 sign bit + magnitude bits
-  const magnitudeBits = Math.ceil(Math.log2(absValue + 1));
-  return magnitudeBits + 1; // +1 for sign bit
-}
-
-/**
- * Convert decimal to binary using division by 2 method with two's complement support
- */
-export function decimalToBinary(
-  decimal: number,
-  specifiedBits?: number
-): ConversionResult {
-  const minBits = calculateMinBits(decimal);
-  const bitWidth = specifiedBits || minBits;
-  const steps: ConversionStep[] = [];
-  const integerSteps: Array<{ quotient: number; remainder: number }> = [];
-  const fractionalSteps: Array<{ value: number; bit: number }> = [];
-
-  const isNegative = decimal < 0;
-  const absValue = Math.abs(decimal);
-  const hasFractionalPart = absValue % 1 !== 0;
-
-  let quotient = Math.floor(absValue);
-  const remainders: string[] = [];
-
-  // Step 1: Convert absolute value to binary using division by 2
-  if (quotient > 0 || !hasFractionalPart) {
-    while (quotient > 0) {
-      const remainder = quotient % 2;
-      integerSteps.push({ quotient, remainder });
-      remainders.unshift(remainder.toString());
-      quotient = Math.floor(quotient / 2);
-    }
-  }
-
-  let magnitude = remainders.join("") || "0";
-
-  // Step 2: Pad to the correct bit width
-  magnitude = magnitude.padStart(bitWidth, "0");
-
-  // Fractional part conversion
-  let fractionalResult = "";
-  if (hasFractionalPart) {
-    let fractionalPart = absValue - Math.floor(absValue);
-    const fractionalBits: string[] = [];
-
-    // Initial fractional step
-    fractionalSteps.push({ value: fractionalPart, bit: -1 }); // Special marker for initial
-
-    while (fractionalPart > 0 && fractionalBits.length < 10) {
-      fractionalPart *= 2;
-      const bit = Math.floor(fractionalPart);
-      fractionalSteps.push({ value: fractionalPart, bit });
-      fractionalBits.push(bit.toString());
-      fractionalPart -= bit;
-    }
-
-    fractionalResult = fractionalBits.join("");
-    magnitude += "." + fractionalResult;
-  }
-
-  // Handle signed representation for negative numbers
-  let signedResult = magnitude;
-  let invertedBits = "";
-  if (isNegative && magnitude !== "0") {
-    // Step 3: Invert the bits (C1 - One's complement)
-    invertedBits = magnitude
-      .split("")
-      .map((bit) => (bit === "0" ? "1" : "0"))
-      .join("");
-
-    // Step 4: Add 1 to get two's complement (C2) - maintain bit width
-    let resultBits = "";
-    let carry = 1; // Start with carry = 1 (adding 1)
-
-    // Process from right to left (LSB to MSB)
-    for (let i = invertedBits.length - 1; i >= 0; i--) {
-      const bit = parseInt(invertedBits[i]);
-      const sum = bit + carry;
-
-      if (sum === 2) {
-        resultBits = "0" + resultBits;
-        carry = 1;
-      } else {
-        resultBits = sum.toString() + resultBits;
-        carry = 0;
-      }
-    }
-
-    // Handle final carry - this can increase the bit width
-    if (carry === 1) {
-      resultBits = "1" + resultBits;
-    }
-
-    // Maintain exact bit width by truncating if necessary
-    if (resultBits.length > bitWidth) {
-      // Truncate from the left (MSB) to maintain bit width
-      resultBits = resultBits.slice(-bitWidth);
-    } else if (resultBits.length < bitWidth) {
-      // Pad with zeros on the left if shorter
-      resultBits = resultBits.padStart(bitWidth, "0");
-    }
-
-    signedResult = resultBits;
-  }
-
-  const flags = {
-    sign: isNegative,
-    zero: decimal === 0,
-    overflow: false, // Could add overflow detection
-  };
-
-  return {
-    input: decimal.toString(),
-    inputBase: "decimal",
-    output: signedResult,
-    outputBase: "binary",
-    steps,
-    hasFractionalPart,
-    integerSteps,
-    fractionalSteps,
-    isNegative,
-    magnitude, // This is the padded binary magnitude
-    signedResult,
-    flags,
-  };
-}
-
-/**
- * Convert binary to decimal using positional weighting
- */
-export function binaryToDecimal(
-  binary: string,
-  specifiedBits?: number
-): ConversionResult {
-  const actualBits = binary.length;
-  const bitWidth = specifiedBits || actualBits;
-  const steps: ConversionStep[] = [];
-  const integerSteps: Array<{ quotient: number; remainder: number }> = [];
-  const fractionalSteps: Array<{ value: number; bit: number }> = [];
-  let decimal = 0;
-  const hasFractionalPart = binary.includes(".");
-
-  if (hasFractionalPart) {
-    const [integerPart, fractionalPart] = binary.split(".");
-
-    // Convert integer part
-    for (let i = 0; i < integerPart.length; i++) {
-      const bit = parseInt(integerPart[integerPart.length - 1 - i]);
-      const power = Math.pow(2, i);
-      const contribution = bit * power;
-
-      steps.push({
-        step: steps.length + 1,
-        input: integerPart[integerPart.length - 1 - i],
-        operation: `× 2^${i}`,
-        output: contribution.toString(),
-      });
-
-      decimal += contribution;
-    }
-
-    // Convert fractional part
-    for (let i = 0; i < fractionalPart.length; i++) {
-      const bit = parseInt(fractionalPart[i]);
-      const power = Math.pow(2, -(i + 1));
-      const contribution = bit * power;
-
-      steps.push({
-        step: steps.length + 1,
-        input: fractionalPart[i],
-        operation: `× 2^${-(i + 1)}`,
-        output: contribution.toString(),
-      });
-
-      decimal += contribution;
-    }
-
-    // Add fractional steps for table display
-    fractionalSteps.push({ value: parseFloat("0." + fractionalPart), bit: -1 });
-    for (let i = 0; i < fractionalPart.length; i++) {
-      const bit = parseInt(fractionalPart[i]);
-      fractionalSteps.push({
-        value: parseFloat("0." + fractionalPart.slice(i)),
-        bit,
-      });
-    }
-  } else {
-    // Integer only
-    for (let i = 0; i < binary.length; i++) {
-      const bit = parseInt(binary[binary.length - 1 - i]);
-      const power = Math.pow(2, i);
-      const contribution = bit * power;
-
-      steps.push({
-        step: i + 1,
-        input: binary[binary.length - 1 - i],
-        operation: `× 2^${i}`,
-        output: contribution.toString(),
-      });
-
-      decimal += contribution;
-    }
-  }
-
-  // Handle two's complement for negative numbers (leading '1' bit)
-  const isNegative = binary.replace(".", "").startsWith("1");
-  if (isNegative) {
-    decimal = decimal - Math.pow(2, bitWidth);
-  }
-
-  const flags = {
-    sign: isNegative,
-    zero: decimal === 0,
-    overflow: false,
-  };
-
-  return {
-    input: binary,
-    inputBase: "binary",
-    output: decimal.toString(),
-    outputBase: "decimal",
-    steps,
-    hasFractionalPart,
-    integerSteps,
-    fractionalSteps,
-    isNegative: false,
-    magnitude: binary,
-    signedResult: decimal.toString(),
-    flags,
-  };
-}
+// binaryToDecimal function moved to ./conversions/binary-to-decimal.ts
 
 /**
  * Convert decimal to octal using division by 8 method
  */
-export function decimalToOctal(decimal: number): ConversionResult {
+export function decimalToOctal(decimal: number | BigNumber): ConversionResult {
   const steps: ConversionStep[] = [];
   const integerSteps: Array<{ quotient: number; remainder: number }> = [];
   const fractionalSteps: Array<{ value: number; bit: number }> = [];
 
-  const isNegative = decimal < 0;
-  const absValue = Math.abs(decimal);
-  const hasFractionalPart = absValue % 1 !== 0;
+  // Handle BigNumber input
+  const isBigNumber = decimal instanceof BigNumber;
+  const bigDecimal = isBigNumber ? decimal : new BigNumber(decimal);
 
-  let quotient = Math.floor(absValue);
+  const isNegative = bigDecimal.isNegative();
+  const absValue = bigDecimal.abs();
+  const hasFractionalPart = !absValue.isInteger();
+
+  let quotient = absValue.integerValue(BigNumber.ROUND_DOWN);
   const remainders: string[] = [];
 
   // Integer part conversion
-  if (quotient > 0 || !hasFractionalPart) {
-    while (quotient > 0) {
-      const remainder = quotient % 8;
-      integerSteps.push({ quotient, remainder });
+  if (quotient.gt(0) || !hasFractionalPart) {
+    while (quotient.gt(0)) {
+      const remainder = quotient.mod(8).toNumber();
+      integerSteps.push({ quotient: quotient.toNumber(), remainder });
       remainders.unshift(remainder.toString());
-      quotient = Math.floor(quotient / 8);
+      quotient = quotient.div(8).integerValue(BigNumber.ROUND_DOWN);
     }
   }
 
   let magnitude = remainders.join("") || "0";
 
-  // Fractional part conversion
+  // Fractional part conversion (only for regular numbers, not BigNumbers for now)
   let fractionalResult = "";
-  if (hasFractionalPart) {
-    let fractionalPart = absValue - Math.floor(absValue);
+  if (hasFractionalPart && !isBigNumber) {
+    let fractionalPart = absValue.toNumber() - Math.floor(absValue.toNumber());
     const fractionalBits: string[] = [];
 
     // Initial fractional step
@@ -412,7 +125,7 @@ export function decimalToOctal(decimal: number): ConversionResult {
       fractionalPart *= 8;
       const bit = Math.floor(fractionalPart);
       fractionalSteps.push({ value: fractionalPart, bit });
-      fractionalBits.push(bit.toString(8));
+      fractionalBits.push(bit.toString());
       fractionalPart -= bit;
     }
 
@@ -480,36 +193,42 @@ export function octalToDecimal(octal: string): ConversionResult {
 /**
  * Convert decimal to hexadecimal using division by 16 method
  */
-export function decimalToHexadecimal(decimal: number): ConversionResult {
+export function decimalToHexadecimal(
+  decimal: number | BigNumber
+): ConversionResult {
   const steps: ConversionStep[] = [];
   const integerSteps: Array<{ quotient: number; remainder: number }> = [];
   const fractionalSteps: Array<{ value: number; bit: number }> = [];
 
-  const isNegative = decimal < 0;
-  const absValue = Math.abs(decimal);
-  const hasFractionalPart = absValue % 1 !== 0;
+  // Handle BigNumber input
+  const isBigNumber = decimal instanceof BigNumber;
+  const bigDecimal = isBigNumber ? decimal : new BigNumber(decimal);
 
-  let quotient = Math.floor(absValue);
+  const isNegative = bigDecimal.isNegative();
+  const absValue = bigDecimal.abs();
+  const hasFractionalPart = !absValue.isInteger();
+
+  let quotient = absValue.integerValue(BigNumber.ROUND_DOWN);
   const remainders: string[] = [];
 
   const hexDigits = "0123456789ABCDEF";
 
   // Integer part conversion
-  if (quotient > 0 || !hasFractionalPart) {
-    while (quotient > 0) {
-      const remainder = quotient % 16;
-      integerSteps.push({ quotient, remainder });
+  if (quotient.gt(0) || !hasFractionalPart) {
+    while (quotient.gt(0)) {
+      const remainder = quotient.mod(16).toNumber();
+      integerSteps.push({ quotient: quotient.toNumber(), remainder });
       remainders.unshift(hexDigits[remainder]);
-      quotient = Math.floor(quotient / 16);
+      quotient = quotient.div(16).integerValue(BigNumber.ROUND_DOWN);
     }
   }
 
   let magnitude = remainders.join("") || "0";
 
-  // Fractional part conversion
+  // Fractional part conversion (only for regular numbers, not BigNumbers for now)
   let fractionalResult = "";
-  if (hasFractionalPart) {
-    let fractionalPart = absValue - Math.floor(absValue);
+  if (hasFractionalPart && !isBigNumber) {
+    let fractionalPart = absValue.toNumber() - Math.floor(absValue.toNumber());
     const fractionalBits: string[] = [];
 
     // Initial fractional step
@@ -530,12 +249,18 @@ export function decimalToHexadecimal(decimal: number): ConversionResult {
   // Handle signed representation - for hexadecimal, use two's complement
   let signedResult = magnitude;
   let twosComplementHex = "";
-  const decimalValue = Math.abs(decimal);
+  const decimalValue = isBigNumber ? bigDecimal.abs() : Math.abs(decimal);
 
   // For large numbers, we need to ensure consistent bit width for both positive and negative
-  if (decimalValue > 0x7fffffff) {
+  const shouldUseLargeFormat =
+    isBigNumber ||
+    (typeof decimal === "number" && Math.abs(decimal) > 0x7fffffff);
+
+  if (shouldUseLargeFormat) {
     // Determine the appropriate bit width based on the number size
-    const binaryLength = decimalValue.toString(2).length;
+    const binaryLength = isBigNumber
+      ? bigDecimal.toString(2).length
+      : decimalValue.toString(2).length;
     let bitWidth;
 
     if (binaryLength <= 32) {
@@ -548,10 +273,15 @@ export function decimalToHexadecimal(decimal: number): ConversionResult {
 
     // For large numbers, pad to the calculated bit width for consistency
     if (!isNegative) {
-      signedResult = decimalValue
-        .toString(16)
-        .toUpperCase()
-        .padStart(bitWidth / 4, "0");
+      signedResult = isBigNumber
+        ? bigDecimal
+            .toString(16)
+            .toUpperCase()
+            .padStart(bitWidth / 4, "0")
+        : decimalValue
+            .toString(16)
+            .toUpperCase()
+            .padStart(bitWidth / 4, "0");
     }
   }
 
@@ -573,7 +303,10 @@ export function decimalToHexadecimal(decimal: number): ConversionResult {
 
     // For negative numbers, calculate two's complement: 2^bitWidth - |value|
     const maxValue = BigInt(1) << BigInt(bitWidth);
-    const twosComplementValue = maxValue - BigInt(decimalValue);
+    const bigIntValue = isBigNumber
+      ? BigInt((decimalValue as BigNumber).toString())
+      : BigInt(decimalValue as number);
+    const twosComplementValue = maxValue - bigIntValue;
     twosComplementHex = twosComplementValue
       .toString(16)
       .toUpperCase()
@@ -637,7 +370,7 @@ export function hexadecimalToDecimal(hex: string): ConversionResult {
  */
 export function binaryToOctal(binary: string): ConversionResult {
   const steps: ConversionStep[] = [];
-  let paddedBinary = binary;
+  let paddedBinary = binary.replace(/\s/g, ""); // Remove spaces first
 
   // Pad with zeros on the left to make length divisible by 3
   while (paddedBinary.length % 3 !== 0) {
@@ -666,10 +399,13 @@ export function binaryToOctal(binary: string): ConversionResult {
     octalDigits.push(octal);
   });
 
+  // Remove leading zeros from the final result
+  const result = octalDigits.join("").replace(/^0+/, "") || "0";
+
   return {
     input: binary,
     inputBase: "binary",
-    output: octalDigits.join(""),
+    output: result,
     outputBase: "octal",
     steps,
   };
@@ -845,7 +581,22 @@ export function convertBetweenBases(
   let adjustedBinaryToDecimalBits = binaryToDecimalBits;
 
   if (fromBase === "decimal" && toBase === "binary" && decimalToBinaryBits) {
-    const inputNum = parseFloat(cleanInput);
+    // Handle large numbers that might be parsed as scientific notation
+    let inputNum: number;
+    if (cleanInput.includes("e") || cleanInput.includes("E")) {
+      // If it's in scientific notation, parse it differently
+      inputNum = parseFloat(cleanInput);
+    } else if (cleanInput.length > 15) {
+      // For very large numbers, use BigInt if possible
+      try {
+        inputNum = Number(cleanInput);
+      } catch {
+        inputNum = parseFloat(cleanInput);
+      }
+    } else {
+      inputNum = parseFloat(cleanInput);
+    }
+
     const requiredBits = calculateMinBits(inputNum);
     if (requiredBits > decimalToBinaryBits) {
       bitLengthWarning = `***ADVERTENCIA: La entrada requiere ${requiredBits} bits; se especificaron ${decimalToBinaryBits} bits. Se ajustó automáticamente a ${requiredBits} bits.`;
@@ -864,17 +615,17 @@ export function convertBetweenBases(
   // Validate input based on source base
   switch (fromBase) {
     case "binary":
-      if (!/^-?[01]+(\.[01]+)?$/.test(cleanInput)) {
-        throw new Error(
-          "La entrada binaria debe contener solo 0s y 1s, con punto decimal opcional"
-        );
+      // Use the modular binary validation
+      const binaryValidation = validateBinaryInput(cleanInput);
+      if (!binaryValidation.isValid) {
+        throw new Error(binaryValidation.error);
       }
       break;
     case "decimal":
-      if (!/^-?\d+(\.\d+)?$/.test(cleanInput)) {
-        throw new Error(
-          "La entrada decimal debe contener solo dígitos, con punto decimal opcional"
-        );
+      // Use the modular decimal validation
+      const decimalValidation2 = validateDecimalInput(cleanInput);
+      if (!decimalValidation2.isValid) {
+        throw new Error(decimalValidation2.error);
       }
       break;
     case "octal":
@@ -893,22 +644,118 @@ export function convertBetweenBases(
       break;
   }
 
+  // Respect user's explicit conversion direction choice
+  const actualFromBase = fromBase;
+
   // Perform conversion
   const result = (() => {
-    switch (`${fromBase}-${toBase}`) {
+    switch (`${actualFromBase}-${toBase}`) {
       case "decimal-binary":
-        return decimalToBinary(
-          parseFloat(cleanInput),
-          adjustedDecimalToBinaryBits
-        );
+        // Use the modular decimal-to-binary conversion
+        const decimalValidation = validateDecimalInput(cleanInput);
+        if (!decimalValidation.isValid) {
+          throw new Error(decimalValidation.error);
+        }
+
+        let decimalValue: number | BigNumber;
+
+        if (
+          cleanInput.length > 15 &&
+          !cleanInput.includes(".") &&
+          !cleanInput.includes("e") &&
+          !cleanInput.includes("E")
+        ) {
+          // For very large integers, use BigNumber to preserve exact value
+          decimalValue = new BigNumber(cleanInput);
+        } else {
+          decimalValue = parseFloat(cleanInput);
+          // Check for NaN (invalid number)
+          if (isNaN(decimalValue as number)) {
+            throw new Error(
+              "El número decimal no es válido o está fuera del rango representable."
+            );
+          }
+        }
+
+        return decimalToBinary(decimalValue, adjustedDecimalToBinaryBits);
       case "binary-decimal":
         return binaryToDecimal(cleanInput, adjustedBinaryToDecimalBits);
       case "decimal-octal":
-        return decimalToOctal(parseFloat(cleanInput));
+        // Support big ass numbers - no input length restrictions
+        if (!/^-?\d+(\.\d+)?$/.test(cleanInput)) {
+          throw new Error(
+            "Número decimal inválido. Solo se permiten dígitos, un punto decimal opcional y un signo negativo opcional."
+          );
+        }
+
+        let useBigNumberOctal = false;
+        if (
+          cleanInput.length > 15 &&
+          !cleanInput.includes(".") &&
+          !cleanInput.includes("e") &&
+          !cleanInput.includes("E")
+        ) {
+          const testParse = parseFloat(cleanInput);
+          if (
+            testParse.toString().includes("e") ||
+            testParse.toString().includes("E")
+          ) {
+            useBigNumberOctal = true;
+          }
+        }
+
+        if (useBigNumberOctal) {
+          const bigDecimalValue = new BigNumber(cleanInput);
+          return decimalToOctal(bigDecimalValue);
+        } else {
+          const octalDecimalValue = parseFloat(cleanInput);
+          if (isNaN(octalDecimalValue)) {
+            throw new Error(
+              "El número decimal no es válido o está fuera del rango representable."
+            );
+          }
+          return decimalToOctal(octalDecimalValue);
+        }
+
       case "octal-decimal":
         return octalToDecimal(cleanInput);
+
       case "decimal-hexadecimal":
-        return decimalToHexadecimal(parseFloat(cleanInput));
+        // Support big ass numbers - no input length restrictions
+        if (!/^-?\d+(\.\d+)?$/.test(cleanInput)) {
+          throw new Error(
+            "Número decimal inválido. Solo se permiten dígitos, un punto decimal opcional y un signo negativo opcional."
+          );
+        }
+
+        let useBigNumberHex = false;
+        if (
+          cleanInput.length > 15 &&
+          !cleanInput.includes(".") &&
+          !cleanInput.includes("e") &&
+          !cleanInput.includes("E")
+        ) {
+          const testParse = parseFloat(cleanInput);
+          if (
+            testParse.toString().includes("e") ||
+            testParse.toString().includes("E")
+          ) {
+            useBigNumberHex = true;
+          }
+        }
+
+        if (useBigNumberHex) {
+          const bigDecimalValue = new BigNumber(cleanInput);
+          return decimalToHexadecimal(bigDecimalValue);
+        } else {
+          const hexDecimalValue = parseFloat(cleanInput);
+          if (isNaN(hexDecimalValue)) {
+            throw new Error(
+              "El número decimal no es válido o está fuera del rango representable."
+            );
+          }
+          return decimalToHexadecimal(hexDecimalValue);
+        }
       case "hexadecimal-decimal":
         return hexadecimalToDecimal(cleanInput);
       case "binary-octal":
@@ -937,7 +784,8 @@ export function convertBetweenBases(
     if (!(fromBase === "octal" && toBase === "binary")) {
       result.output = formatWithGrouping(result.output, toBase);
     }
-    result.input = formatWithGrouping(result.input, fromBase);
+    // Don't format the input - keep it as originally entered
+    // result.input = formatWithGrouping(result.input, fromBase);
   }
 
   // Add bit length warning if present
@@ -948,38 +796,14 @@ export function convertBetweenBases(
   return result;
 }
 
-/**
- * Get the name of a base in Spanish
- */
-export function getBaseName(base: BaseType): string {
-  switch (base) {
-    case "binary":
-      return "Binario";
-    case "decimal":
-      return "Decimal";
-    case "octal":
-      return "Octal";
-    case "hexadecimal":
-      return "Hexadecimal";
-    default:
-      return base;
-  }
-}
+// getBaseName function moved to ./utils/calculation-helpers.ts
 
-/**
- * Get the base number for a base type
- */
-export function getBaseNumber(base: BaseType): number {
-  switch (base) {
-    case "binary":
-      return 2;
-    case "decimal":
-      return 10;
-    case "octal":
-      return 8;
-    case "hexadecimal":
-      return 16;
-    default:
-      return 10;
-  }
-}
+// getBaseNumber function moved to ./utils/calculation-helpers.ts
+
+// Re-export conversion functions for backward compatibility
+export {
+  decimalToBinary,
+  binaryToDecimal,
+  validateDecimalInput,
+  validateBinaryInput,
+} from "./conversions";
