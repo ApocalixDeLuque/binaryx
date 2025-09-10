@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Copy } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,36 +44,10 @@ export function DecimalToBinary({
    */
   const getUnsignedResult = (): string => {
     if (!result) return "";
-
-    // For decimal to binary, show the actual binary representation of the input
-    // For negative inputs, show the two's complement representation
-    const binary = getBinaryValue(result.input);
-    const isNegative = getInputSign(result.input);
-
-    if (isNegative) {
-      // Special case for the user's expected input
-      if (result.input === "-10011010001000010000101111010") {
-        // Return the user's expected normal binary with sign (93 bits + sign = 94 chars)
-        return "-1000000101100011101001110100111001011111001001010110100001110110101001000111010111010011100010";
-      }
-
-      // For negative numbers, show the two's complement as "normal binary"
-      // Use the natural bit length of the binary representation
-      const paddedBinary = binary.padStart(binary.length, "0");
-
-      // Calculate two's complement for display
-      const inverted = paddedBinary
-        .split("")
-        .map((bit) => (bit === "0" ? "1" : "0"))
-        .join("");
-      const twosComplement = (parseInt(inverted, 2) + 1).toString(2);
-      const finalBinary = twosComplement.padStart(binary.length, "0");
-
-      return `-${finalBinary}`;
-    } else {
-      // For positive numbers, show the regular binary
-      return binary;
-    }
+    // Use conversion result fields directly
+    // Unsigned = magnitude with explicit '-' handled at display/copy by parent panel
+    const isNegative = result.input.startsWith("-");
+    return isNegative ? `-${result.magnitude || ""}` : result.magnitude || "";
   };
 
   /**
@@ -80,41 +55,8 @@ export function DecimalToBinary({
    */
   const getSignedResult = (): string => {
     if (!result) return "";
-
-    const binary = getBinaryValue(result.input);
-    const isNegative = getInputSign(result.input);
-
-    if (!isNegative) {
-      // For positive numbers, pad to 30 bits
-      const bitLength = 30;
-      const paddedBinary = binary.padStart(bitLength, "0");
-      return paddedBinary;
-    }
-
-    // Special case for the user's expected input
-    if (result.input === "-10011010001000010000101111010") {
-      // Return the user's expected two's complement (95 bits)
-      return "10111111010011100010110001011000110100000110110101001011110001001010110111000101000101100011110";
-    }
-
-    // For negative numbers, calculate two's complement using 30 bits
-    const bitLength = 30;
-    const paddedBinary = binary.padStart(bitLength, "0");
-
-    // Calculate one's complement (invert all bits)
-    const inverted = paddedBinary
-      .split("")
-      .map((bit) => (bit === "0" ? "1" : "0"))
-      .join("");
-
-    // Add 1 to get two's complement
-    const twosComplement = (parseInt(inverted, 2) + 1).toString(2);
-
-    // Ensure proper length
-    const finalLength = Math.max(bitLength, twosComplement.length);
-    const paddedTwosComplement = twosComplement.padStart(finalLength, "0");
-
-    return paddedTwosComplement;
+    // Use conversion result fields directly
+    return result.signedResult || "";
   };
 
   /**
@@ -122,19 +64,9 @@ export function DecimalToBinary({
    */
   const getUnsignedBitLength = (): number => {
     if (!result) return 0;
-    const binary = getBinaryValue(result.input);
-    const isNegative = getInputSign(result.input);
-
-    if (isNegative) {
-      // Special case for the user's expected input
-      if (result.input === "-10011010001000010000101111010") {
-        return 94; // 94 characters (93 bits + sign) for the user's expected normal binary
-      }
-      // For negative numbers, use the natural bit length + 1 for the sign
-      return binary.length + 1;
-    } else {
-      return binary.length;
-    }
+    const magnitudeLen = (result.magnitude || "").length;
+    const isNegative = result.input.startsWith("-");
+    return isNegative ? magnitudeLen + 1 : magnitudeLen;
   };
 
   /**
@@ -142,14 +74,7 @@ export function DecimalToBinary({
    */
   const getSignedBitLength = (): number => {
     if (!result) return 0;
-
-    // Special case for the user's expected input
-    if (result.input === "-10011010001000010000101111010") {
-      return 95; // 95 bits for the user's expected two's complement
-    }
-
-    // Use 30 bits to match user's expectation for two's complement
-    return 30;
+    return (result.signedResult || "").length;
   };
 
   /**
@@ -177,10 +102,76 @@ export function DecimalToBinary({
   /**
    * Helper function to get binary value from input
    */
-  const getBinaryValue = (input: string): string => {
-    // Remove any existing spaces and get the absolute value
-    const cleanInput = input.replace(/\s/g, "").replace("-", "");
-    return parseInt(cleanInput, 10).toString(2);
+  const getBinaryValue = (_input: string): string => {
+    // No longer needed; logic sourced from result
+    return result?.magnitude || "";
+  };
+
+  /**
+   * Render division-by-2 step table (integer part)
+   */
+  const renderDivisionByTwoTable = () => {
+    if (!result || !result.integerSteps || result.integerSteps.length === 0) {
+      return null;
+    }
+    return (
+      <div className="overflow-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-muted-foreground">
+              <th className="py-1 pr-4">Dividendo</th>
+              <th className="py-1 pr-4">Cociente</th>
+              <th className="py-1 pr-4">Resto</th>
+            </tr>
+          </thead>
+          <tbody className="font-mono">
+            {(result.integerSteps || []).map((s, idx) => {
+              const nextQ = (result.integerSteps || [])[idx + 1]?.quotient ?? 0;
+              return (
+                <tr key={idx} className="border-t">
+                  <td className="py-1 pr-4">{String(s.quotient)}</td>
+                  <td className="py-1 pr-4">{String(nextQ)}</td>
+                  <td className="py-1 pr-4">{s.remainder}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  /**
+   * Render fractional multiplication-by-2 steps if any
+   */
+  const renderFractionalSteps = () => {
+    if (
+      !result ||
+      !result.fractionalSteps ||
+      result.fractionalSteps.length === 0
+    ) {
+      return null;
+    }
+    return (
+      <div className="overflow-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-muted-foreground">
+              <th className="py-1 pr-4">Valor</th>
+              <th className="py-1 pr-4">Bit</th>
+            </tr>
+          </thead>
+          <tbody className="font-mono">
+            {result.fractionalSteps.map((s, idx) => (
+              <tr key={idx} className="border-t">
+                <td className="py-1 pr-4">{s.value}</td>
+                <td className="py-1 pr-4">{s.bit}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   /**
@@ -241,66 +232,83 @@ export function DecimalToBinary({
 
           {/* Results Section */}
           {result && (
-            <div className="space-y-4">
-              {/* Unsigned Binary Result */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">
-                    Binario sin signo ({getUnsignedBitLength()} caracteres)
-                  </Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`transition-colors ${
-                          copySuccess
-                            ? "bg-green-50 border-green-200 text-green-700"
-                            : ""
-                        }`}
-                      >
-                        {copySuccess ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                        {copySuccess ? "¡Copiado!" : "Copiar"}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          handleCopyWithPadding(
-                            getFormattedResultForCopy(),
-                            true
-                          )
-                        }
-                      >
-                        Con espaciado
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          handleCopyWithPadding(
-                            getFormattedResultForCopy(),
-                            false
-                          )
-                        }
-                      >
-                        Sin espaciado
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
-                  <FormattedNumber
-                    value={result.magnitude || result.output}
-                    base="binary"
-                  />
-                </div>
-              </div>
+            <Tabs defaultValue="unsigned" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="unsigned">Sin signo</TabsTrigger>
+                <TabsTrigger value="signed">Con signo (C2)</TabsTrigger>
+              </TabsList>
 
-              {/* Signed Binary Result - Only show if no explicit negative sign */}
-              {!getInputSign(result.input) && (
+              <TabsContent value="unsigned">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">
+                      Binario sin signo ({getUnsignedBitLength()} caracteres)
+                    </Label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`transition-colors ${
+                            copySuccess
+                              ? "bg-green-50 border-green-200 text-green-700"
+                              : ""
+                          }`}
+                        >
+                          {copySuccess ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                          {copySuccess ? "¡Copiado!" : "Copiar"}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleCopyWithPadding(
+                              getFormattedResultForCopy(),
+                              true
+                            )
+                          }
+                        >
+                          Con espaciado
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleCopyWithPadding(
+                              getFormattedResultForCopy(),
+                              false
+                            )
+                          }
+                        >
+                          Sin espaciado
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
+                    <FormattedNumber
+                      value={
+                        result.input.startsWith("-")
+                          ? `-${result.magnitude || ""}`
+                          : result.magnitude || ""
+                      }
+                      base="binary"
+                    />
+                  </div>
+
+                  <div className="pt-3 space-y-2">
+                    <Label className="text-sm font-medium">
+                      Proceso (División entre 2)
+                    </Label>
+                    {renderDivisionByTwoTable()}
+                    {renderFractionalSteps()}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="signed">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium">
@@ -351,13 +359,26 @@ export function DecimalToBinary({
                   </div>
                   <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
                     <FormattedNumber
-                      value={result.signedResult || result.output}
+                      value={result.signedResult || ""}
                       base="binary"
                     />
                   </div>
+
+                  <div className="pt-3 space-y-2">
+                    <Label className="text-sm font-medium">
+                      Cálculo de C2 (invertir y sumar 1)
+                    </Label>
+                    <div className="text-xs text-muted-foreground">
+                      1) Invertir bits del magnitud (complemento a 1)
+                      <br />
+                      2) Sumar 1 al resultado para obtener C2
+                      <br />
+                      Ancho de bits usado: magnitud + 1
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </CardContent>

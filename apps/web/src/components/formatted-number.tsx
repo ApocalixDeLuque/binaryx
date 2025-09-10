@@ -34,26 +34,53 @@ export function FormattedNumber({
 }
 
 function formatBinary(value: string, className: string): React.ReactElement {
-  if (!value || value === "0") {
+  if (!value) {
     return <span className={className}>{value}</span>;
   }
 
-  // Group binary digits in 4-bit groups from right to left
-  const groups: string[] = [];
-  let remaining = value;
+  // Handle sign
+  const isNegative = value.startsWith("-");
+  const unsigned = isNegative ? value.slice(1) : value;
 
+  // Handle fractional part
+  if (unsigned.includes(".")) {
+    const [intPartRaw, fracPartRaw] = unsigned.split(".");
+    const intPart = intPartRaw || "0";
+    const fracPart = fracPartRaw || "";
+
+    // Integer: group right-to-left in 4s
+    const intGroups: string[] = [];
+    let intRemain = intPart;
+    while (intRemain.length > 4) {
+      const group = intRemain.slice(-4);
+      intGroups.unshift(group);
+      intRemain = intRemain.slice(0, -4);
+    }
+    if (intRemain.length > 0) intGroups.unshift(intRemain);
+
+    // Fractional: group left-to-right in 4s
+    const fracGroups: string[] = [];
+    for (let i = 0; i < fracPart.length; i += 4) {
+      fracGroups.push(fracPart.slice(i, i + 4));
+    }
+
+    const formatted = `${isNegative ? "-" : ""}${intGroups.join(
+      " "
+    )}.${fracGroups.join(" ")}`;
+    return <span className={className}>{formatted}</span>;
+  }
+
+  // Pure integer: group right-to-left
+  const groups: string[] = [];
+  let remaining = unsigned;
   while (remaining.length > 4) {
     const group = remaining.slice(-4);
     groups.unshift(group);
     remaining = remaining.slice(0, -4);
   }
+  if (remaining.length > 0) groups.unshift(remaining);
 
-  if (remaining.length > 0) {
-    groups.unshift(remaining);
-  }
-
-  const formatted = groups.join(" ");
-
+  const formatted = `${isNegative ? "-" : ""}${groups.join(" ")}`;
   return <span className={className}>{formatted}</span>;
 }
 

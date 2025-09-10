@@ -37,28 +37,21 @@ export function decimalToBinary(
   let quotient = absValue.integerValue(BigNumber.ROUND_DOWN);
   const remainders: string[] = [];
 
-  // Step 1: Convert absolute value to binary
+  // Step 1: Convert absolute value to binary using repeated division by 2
   let magnitude: string;
   if (quotient.gt(0) || !hasFractionalPart) {
-    // For very large numbers (BigNumber), use built-in binary conversion
-    // to avoid precision loss in manual division algorithm
-    if (isBigNumber && quotient.gt(Number.MAX_SAFE_INTEGER)) {
-      magnitude = quotient.toString(2);
-    } else {
-      // For smaller numbers, use the traditional division algorithm
-      while (quotient.gt(0)) {
-        const remainder = quotient.mod(2).toNumber();
-        integerSteps.push({
-          quotient: quotient.gt(Number.MAX_SAFE_INTEGER)
-            ? quotient
-            : quotient.toNumber(),
-          remainder,
-        });
-        remainders.unshift(remainder.toString());
-        quotient = quotient.div(2).integerValue(BigNumber.ROUND_DOWN);
-      }
-      magnitude = remainders.join("") || "0";
+    while (quotient.gt(0)) {
+      const remainder = quotient.mod(2).toNumber();
+      integerSteps.push({
+        quotient: quotient.gt(Number.MAX_SAFE_INTEGER)
+          ? quotient
+          : quotient.toNumber(),
+        remainder,
+      });
+      remainders.unshift(remainder.toString());
+      quotient = quotient.div(2).integerValue(BigNumber.ROUND_DOWN);
     }
+    magnitude = remainders.join("") || "0";
   } else {
     magnitude = "0";
   }
@@ -92,7 +85,7 @@ export function decimalToBinary(
     // Initial fractional step
     fractionalSteps.push({ value: fractionalPart, bit: -1 }); // Special marker for initial
 
-    while (fractionalPart > 0 && fractionalBits.length < 10) {
+    while (fractionalPart > 0 && fractionalBits.length < 8) {
       fractionalPart *= 2;
       const bit = Math.floor(fractionalPart);
       fractionalSteps.push({ value: fractionalPart, bit });
@@ -116,14 +109,43 @@ export function decimalToBinary(
 
     // Calculate two's complement for signedResult
     if (magnitude.includes(".")) {
-      // Handle fractional part - for simplicity, we'll just use the magnitude for now
-      // Proper fractional two's complement would require more complex logic
-      signedResult = magnitude;
+      // Fractional two's complement with fixed 8 fractional bits
+      const [i, f] = magnitude.split(".");
+      const frac = (f || "").padEnd(8, "0").slice(0, 8);
+      const intWidth = i.length + 1; // pad with one extra sign bit
+      const paddedInt = i.padStart(intWidth, "0");
+
+      const invert = (s: string) =>
+        s
+          .split("")
+          .map((b) => (b === "0" ? "1" : "0"))
+          .join("");
+
+      const invInt = invert(paddedInt);
+      const invFrac = invert(frac);
+
+      // Add 1 to the entire fixed-point word (integer + fractional)
+      const joined = (invInt + invFrac).split("");
+      let carry = 1;
+      for (let k = joined.length - 1; k >= 0 && carry; k--) {
+        if (joined[k] === "0") {
+          joined[k] = "1";
+          carry = 0;
+        } else {
+          joined[k] = "0";
+        }
+      }
+      const newInt = joined.slice(0, intWidth).join("");
+      const newFrac = joined.slice(intWidth, intWidth + frac.length).join("");
+      signedResult = `${newInt}.${newFrac}`;
     } else {
       // For integer binary, calculate proper two's complement
+      // Use minimal width such that the magnitude fits in (width - 1) bits
+      // i.e., width = magnitude bit-length + 1
       const binaryLength = magnitude.length;
+      const width = binaryLength + 1;
       // Pad to ensure we have enough bits for two's complement
-      const paddedBinary = magnitude.padStart(Math.max(binaryLength, 4), "0");
+      const paddedBinary = magnitude.padStart(width, "0");
 
       // Calculate one's complement (invert all bits)
       const inverted = paddedBinary
@@ -138,7 +160,7 @@ export function decimalToBinary(
       // Convert back to binary string
       signedResult = twosComplementBigInt.toString(2);
 
-      // Ensure proper length (should be at least as long as original)
+      // Ensure proper length equals chosen width
       if (signedResult.length < paddedBinary.length) {
         signedResult = signedResult.padStart(paddedBinary.length, "0");
       }

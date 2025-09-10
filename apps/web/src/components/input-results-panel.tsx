@@ -202,9 +202,11 @@ export function InputResultsPanel({
         : "binary"
       : toBase;
 
+    // Primary (unsigned) display uses magnitude for decimal→binary,
+    // and uses result.output otherwise
     const rawValue = needsDualResults()
       ? fromBase === "decimal" && toBase === "binary"
-        ? result.magnitude || result.output || ""
+        ? `${getInputSign(input) ? "-" : ""}${result.magnitude || ""}`
         : result.output || ""
       : result.output || "";
 
@@ -220,6 +222,7 @@ export function InputResultsPanel({
   ): string => {
     if (!result || !needsDualResults()) return "";
 
+    // Secondary (signed two's complement) display uses result.signedResult for decimal→binary
     const rawValue =
       fromBase === "decimal" && toBase === "binary"
         ? result.signedResult || result.output || ""
@@ -364,6 +367,38 @@ export function InputResultsPanel({
     return (result.output || "").length;
   };
 
+  const getUnsignedBitSpanLabel = (): string => {
+    if (!result) return "";
+    if (fromBase === "decimal" && toBase === "binary") {
+      const magnitude = result.magnitude || result.output || "";
+      const [intPart, fracPart = ""] = magnitude.split(".");
+      const intLen = (intPart || "").length;
+      const fracLen = (fracPart || "").length;
+      return fracLen ? `${intLen}.${fracLen} bits` : `${intLen} bits`;
+    }
+    const len = (result.output || "").length;
+    return `${len} caracteres`;
+  };
+
+  const getSignedBitSpanLabel = (): string => {
+    if (!result) return "";
+    if (fromBase === "decimal" && toBase === "binary") {
+      const signed = result.signedResult || result.output || "";
+      const [intPart, fracPart = ""] = signed.split(".");
+      const intLen = (intPart || "").length;
+      const fracLen = (fracPart || "").length;
+      return fracLen ? `${intLen}.${fracLen} bits` : `${intLen} bits`;
+    }
+    const len = (result.output || "").length;
+    return `${len} caracteres`;
+  };
+
+  // Determine if we should show the secondary (signed/C2) result
+  const isDecimalToBinary = fromBase === "decimal" && toBase === "binary";
+  const isBinaryToDecimal = isBinaryInput(input) && toBase === "decimal";
+  const showSecondaryResult =
+    (isDecimalToBinary && getInputSign(input)) || isBinaryToDecimal;
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -432,7 +467,7 @@ export function InputResultsPanel({
                   {needsDualResults()
                     ? isBinaryInput(input)
                       ? `Decimal sin signo`
-                      : `Binario sin signo (${getUnsignedBitLength()} caracteres)`
+                      : `Binario sin signo (${getUnsignedBitSpanLabel()})`
                     : "Resultado"}
                 </Label>
                 <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
@@ -440,7 +475,9 @@ export function InputResultsPanel({
                     <FormattedNumber
                       value={
                         fromBase === "decimal" && toBase === "binary"
-                          ? result.magnitude || result.output || ""
+                          ? `${getInputSign(input) ? "-" : ""}${
+                              result.magnitude || ""
+                            }`
                           : result.output || ""
                       }
                       base={isBinaryInput(input) ? "decimal" : "binary"}
@@ -495,76 +532,70 @@ export function InputResultsPanel({
           )}
 
           {/* Secondary Result Section (Optional) */}
-          {result &&
-            needsDualResults() &&
-            (fromBase !== "binary" || !getInputSign(input)) && (
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <Label className="text-sm font-medium">
-                    {isBinaryInput(input)
-                      ? `Decimal con complemento a 2`
-                      : `Complemento a 2 (${getSignedBitLength()} bits)`}
-                  </Label>
-                  <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
-                    <FormattedNumber
-                      value={
-                        fromBase === "decimal" && toBase === "binary"
-                          ? result.signedResult || result.output || ""
-                          : result.output || ""
-                      }
-                      base={isBinaryInput(input) ? "decimal" : "binary"}
-                    />
-                  </div>
+          {result && needsDualResults() && showSecondaryResult && (
+            <div className="flex gap-3 items-start">
+              <div className="flex-1">
+                <Label className="text-sm font-medium">
+                  {isBinaryInput(input)
+                    ? `Decimal con complemento a 2`
+                    : `Complemento a 2 (${getSignedBitSpanLabel()})`}
+                </Label>
+                <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
+                  <FormattedNumber
+                    value={
+                      fromBase === "decimal" && toBase === "binary"
+                        ? result.signedResult || result.output || ""
+                        : result.output || ""
+                    }
+                    base={isBinaryInput(input) ? "decimal" : "binary"}
+                  />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      title={
-                        copySuccessSecondary ? "¡Copiado!" : "Copiar resultado"
-                      }
-                      className={`transition-colors w-32 justify-center ${
-                        copySuccessSecondary
-                          ? "bg-green-50 border-green-200"
-                          : ""
-                      }`}
-                    >
-                      {copySuccessSecondary ? (
-                        <Check className="h-4 w-4 text-green-600 mr-2" />
-                      ) : (
-                        <Copy className="h-4 w-4 mr-2" />
-                      )}
-                      {copySuccessSecondary ? "¡Copiado!" : "Copiar"}
-                      {!copySuccessSecondary && (
-                        <ChevronDown className="h-4 w-4 ml-2" />
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleCopySecondary(
-                          getFormattedSignedResultForCopy(true)
-                        )
-                      }
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Con espaciado
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleCopySecondary(
-                          getFormattedSignedResultForCopy(false)
-                        )
-                      }
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Sin espaciado
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
-            )}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="mt-5" asChild>
+                  <Button
+                    variant="outline"
+                    title={
+                      copySuccessSecondary ? "¡Copiado!" : "Copiar resultado"
+                    }
+                    className={`transition-colors w-32 justify-center ${
+                      copySuccessSecondary ? "bg-green-50 border-green-200" : ""
+                    }`}
+                  >
+                    {copySuccessSecondary ? (
+                      <Check className="h-4 w-4 text-green-600 mr-2" />
+                    ) : (
+                      <Copy className="h-4 w-4 mr-2" />
+                    )}
+                    {copySuccessSecondary ? "¡Copiado!" : "Copiar"}
+                    {!copySuccessSecondary && (
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopySecondary(getFormattedSignedResultForCopy(true))
+                    }
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Con espaciado
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopySecondary(
+                        getFormattedSignedResultForCopy(false)
+                      )
+                    }
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Sin espaciado
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
 
           {/* Convert Button - Hidden since conversion happens automatically */}
           {/* <div className="flex justify-center">
