@@ -121,9 +121,7 @@ export function DecimalToBinarySteps({ result, viewMode }: StepsProps) {
 
   return (
     <Section title="Conversión Decimal → Binario">
-      <div className="text-sm text-muted-foreground mb-2">
-        Parte entera: Valor ({initialIntegerValue}) | ÷2
-      </div>
+      <div className="text-sm text-muted-foreground mb-2">Parte entera:</div>
       <div className="overflow-x-auto">
         <table className="w-full border text-xs">
           <thead>
@@ -168,14 +166,16 @@ export function DecimalToBinarySteps({ result, viewMode }: StepsProps) {
       {fracSteps.length > 0 && (
         <div className="mt-4">
           <div className="text-sm text-muted-foreground mb-2">
-            Parte fraccionaria: Valor ({initialFractionalValue})
+            Parte fraccionaria:
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border text-xs">
               <thead>
                 <tr className="bg-muted/50">
                   <th className="px-2 py-1 border">×2</th>
-                  <th className="px-2 py-1 border">Valor</th>
+                  <th className="px-2 py-1 border">
+                    Valor ({initialFractionalValue})
+                  </th>
                 </tr>
               </thead>
               <tbody>

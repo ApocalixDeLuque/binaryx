@@ -118,7 +118,7 @@ export function InputResultsPanel({
     base: BaseType
   ): string => {
     // Remove any existing spaces for consistent formatting
-    const cleanValue = value.replace(/\s/g, "");
+    const cleanValue = value.replace(/[\s,]/g, "");
 
     switch (base) {
       case "binary":
@@ -182,11 +182,19 @@ export function InputResultsPanel({
         return hexGroups.join(" ");
 
       case "decimal":
-        if (!cleanValue || cleanValue === "0") {
+        if (!cleanValue) {
           return cleanValue;
         }
-        // Add commas every 3 digits from right to left
-        return cleanValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        // Group only the integer part; leave fractional untouched
+        const isNeg = cleanValue.startsWith("-");
+        const unsigned = isNeg ? cleanValue.slice(1) : cleanValue;
+        if (unsigned.includes(".")) {
+          const [intPartRaw, fracPartRaw] = unsigned.split(".");
+          const intFormatted = intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          return `${isNeg ? "-" : ""}${intFormatted}.${fracPartRaw}`;
+        }
+        const intFormatted = unsigned.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return `${isNeg ? "-" : ""}${intFormatted}`;
 
       default:
         return cleanValue;
@@ -207,6 +215,8 @@ export function InputResultsPanel({
     const rawValue = needsDualResults()
       ? fromBase === "decimal" && toBase === "binary"
         ? `${getInputSign(input) ? "-" : ""}${result.magnitude || ""}`
+        : isBinaryInput(input) && toBase === "decimal"
+        ? result.output || ""
         : result.output || ""
       : result.output || "";
 
@@ -222,14 +232,18 @@ export function InputResultsPanel({
   ): string => {
     if (!result || !needsDualResults()) return "";
 
-    // Secondary (signed two's complement) display uses result.signedResult for decimal→binary
+    // Use signed for decimal→binary, and for binary→decimal use signedResult too
     const rawValue =
-      fromBase === "decimal" && toBase === "binary"
+      (fromBase === "decimal" && toBase === "binary") ||
+      (isBinaryInput(input) && toBase === "decimal")
         ? result.signedResult || result.output || ""
         : result.output || "";
 
-    const formatted = formatValueLikeFormattedNumber(rawValue, "binary");
-    return withSpacing ? formatted : formatted.replace(/\s/g, "");
+    const formatted = formatValueLikeFormattedNumber(
+      rawValue,
+      isBinaryInput(input) && toBase === "decimal" ? "decimal" : "binary"
+    );
+    return withSpacing ? formatted : formatted.replace(/[\s,]/g, "");
   };
 
   /**
@@ -262,11 +276,12 @@ export function InputResultsPanel({
    * Check if we need dual results (decimal to binary case)
    */
   const needsDualResults = (): boolean => {
-    // Show dual results for decimal to binary OR when binary input is detected
-    const isActuallyBinaryInput = isBinaryInput(input);
+    // Dual results for:
+    // - decimal -> binary (unsigned + C2 when negative)
+    // - binary -> decimal (unsigned + signed C2 when no explicit '-')
     return (
       (fromBase === "decimal" && toBase === "binary") ||
-      (isActuallyBinaryInput && toBase === "decimal")
+      (fromBase === "binary" && toBase === "decimal")
     );
   };
 
@@ -275,7 +290,7 @@ export function InputResultsPanel({
    */
   const isBinaryInput = (input: string): boolean => {
     const cleanInput = input.replace(/\s/g, "").replace(/^-/, "");
-    return /^[01]+$/.test(cleanInput) && cleanInput.length > 0;
+    return /^[01]+(\.[01]+)?$/.test(cleanInput) && cleanInput.length > 0;
   };
 
   /**
@@ -395,9 +410,10 @@ export function InputResultsPanel({
 
   // Determine if we should show the secondary (signed/C2) result
   const isDecimalToBinary = fromBase === "decimal" && toBase === "binary";
-  const isBinaryToDecimal = isBinaryInput(input) && toBase === "decimal";
+  const isBinaryToDecimal = fromBase === "binary" && toBase === "decimal";
   const showSecondaryResult =
-    (isDecimalToBinary && getInputSign(input)) || isBinaryToDecimal;
+    (isDecimalToBinary && getInputSign(input)) ||
+    (isBinaryToDecimal && !getInputSign(input));
 
   return (
     <Card>
@@ -437,35 +453,13 @@ export function InputResultsPanel({
             </Button>
           </div>
 
-          {/* Warnings Section */}
-          {(error || manualNegativeWarning) && (
-            <div className="space-y-2">
-              {error && (
-                <Badge
-                  variant="destructive"
-                  className="w-full justify-center py-2"
-                >
-                  {error}
-                </Badge>
-              )}
-              {manualNegativeWarning && (
-                <Badge
-                  variant="destructive"
-                  className="w-full justify-center py-2"
-                >
-                  {manualNegativeWarning}
-                </Badge>
-              )}
-            </div>
-          )}
-
           {/* Primary Result Section */}
           {result && (
             <div className="flex gap-3 items-start">
               <div className="flex-1">
                 <Label className="text-sm font-medium">
                   {needsDualResults()
-                    ? isBinaryInput(input)
+                    ? isBinaryToDecimal
                       ? `Decimal sin signo`
                       : `Binario sin signo (${getUnsignedBitSpanLabel()})`
                     : "Resultado"}
@@ -478,9 +472,11 @@ export function InputResultsPanel({
                           ? `${getInputSign(input) ? "-" : ""}${
                               result.magnitude || ""
                             }`
+                          : isBinaryInput(input) && toBase === "decimal"
+                          ? result.output || ""
                           : result.output || ""
                       }
-                      base={isBinaryInput(input) ? "decimal" : "binary"}
+                      base={isBinaryToDecimal ? "decimal" : "binary"}
                     />
                   ) : (
                     <FormattedNumber value={result.output} base={toBase} />
@@ -536,7 +532,7 @@ export function InputResultsPanel({
             <div className="flex gap-3 items-start">
               <div className="flex-1">
                 <Label className="text-sm font-medium">
-                  {isBinaryInput(input)
+                  {isBinaryToDecimal
                     ? `Decimal con complemento a 2`
                     : `Complemento a 2 (${getSignedBitSpanLabel()})`}
                 </Label>
@@ -545,9 +541,11 @@ export function InputResultsPanel({
                     value={
                       fromBase === "decimal" && toBase === "binary"
                         ? result.signedResult || result.output || ""
+                        : isBinaryInput(input) && toBase === "decimal"
+                        ? result.signedResult || result.output || ""
                         : result.output || ""
                     }
-                    base={isBinaryInput(input) ? "decimal" : "binary"}
+                    base={isBinaryToDecimal ? "decimal" : "binary"}
                   />
                 </div>
               </div>
@@ -594,6 +592,22 @@ export function InputResultsPanel({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+          )}
+
+          {/* Warnings Section */}
+          {(error || manualNegativeWarning) && (
+            <div className="space-y-2">
+              {error && (
+                <Badge className="w-full bg-red-400 text-white whitespace-normal justify-center py-2">
+                  {error}
+                </Badge>
+              )}
+              {manualNegativeWarning && (
+                <Badge className="w-full bg-red-400 text-white whitespace-normal justify-center py-2">
+                  {manualNegativeWarning}
+                </Badge>
+              )}
             </div>
           )}
 

@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 export default function Header() {
   const links = [
     { to: "/", label: "Operaciones" },
-    { to: "/conversions", label: "Conversión" },
+    { to: "/conversiones", label: "Conversiones" },
   ] as const;
   const pathname = usePathname();
 

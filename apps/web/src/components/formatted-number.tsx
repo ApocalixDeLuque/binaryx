@@ -17,7 +17,7 @@ export function FormattedNumber({
   className = "",
 }: FormattedNumberProps) {
   // Remove any existing spaces for consistent formatting
-  const cleanValue = value.replace(/\s/g, "");
+  const cleanValue = value.replace(/[\s,]/g, "");
 
   switch (base) {
     case "binary":
@@ -85,26 +85,48 @@ function formatBinary(value: string, className: string): React.ReactElement {
 }
 
 function formatOctal(value: string, className: string): React.ReactElement {
-  if (!value || value === "0") {
+  if (!value) {
     return <span className={className}>{value}</span>;
   }
 
-  // Group octal digits in 3-digit groups from right to left
-  const groups: string[] = [];
-  let remaining = value;
+  const isNegative = value.startsWith("-");
+  const unsigned = isNegative ? value.slice(1) : value;
 
+  if (unsigned.includes(".")) {
+    const [intPartRaw, fracPartRaw] = unsigned.split(".");
+    const intPart = intPartRaw || "0";
+    const fracPart = fracPartRaw || "";
+
+    const intGroups: string[] = [];
+    let intRemain = intPart;
+    while (intRemain.length > 3) {
+      const group = intRemain.slice(-3);
+      intGroups.unshift(group);
+      intRemain = intRemain.slice(0, -3);
+    }
+    if (intRemain.length > 0) intGroups.unshift(intRemain);
+
+    const fracGroups: string[] = [];
+    for (let i = 0; i < fracPart.length; i += 3) {
+      fracGroups.push(fracPart.slice(i, i + 3));
+    }
+
+    const formatted = `${isNegative ? "-" : ""}${intGroups.join(
+      " "
+    )}.${fracGroups.join(" ")}`;
+    return <span className={className}>{formatted}</span>;
+  }
+
+  const groups: string[] = [];
+  let remaining = unsigned;
   while (remaining.length > 3) {
     const group = remaining.slice(-3);
     groups.unshift(group);
     remaining = remaining.slice(0, -3);
   }
+  if (remaining.length > 0) groups.unshift(remaining);
 
-  if (remaining.length > 0) {
-    groups.unshift(remaining);
-  }
-
-  const formatted = groups.join(" ");
-
+  const formatted = `${isNegative ? "-" : ""}${groups.join(" ")}`;
   return <span className={className}>{formatted}</span>;
 }
 
@@ -112,36 +134,69 @@ function formatHexadecimal(
   value: string,
   className: string
 ): React.ReactElement {
-  if (!value || value === "0") {
+  if (!value) {
     return <span className={className}>{value}</span>;
   }
 
-  // Group hexadecimal digits in 2-digit groups from right to left
-  const groups: string[] = [];
-  let remaining = value;
+  const isNegative = value.startsWith("-");
+  const unsigned = isNegative ? value.slice(1) : value;
 
+  if (unsigned.includes(".")) {
+    const [intPartRaw, fracPartRaw] = unsigned.split(".");
+    const intPart = intPartRaw || "0";
+    const fracPart = fracPartRaw || "";
+
+    const intGroups: string[] = [];
+    let intRemain = intPart;
+    while (intRemain.length > 2) {
+      const group = intRemain.slice(-2);
+      intGroups.unshift(group);
+      intRemain = intRemain.slice(0, -2);
+    }
+    if (intRemain.length > 0) intGroups.unshift(intRemain);
+
+    const fracGroups: string[] = [];
+    for (let i = 0; i < fracPart.length; i += 2) {
+      fracGroups.push(fracPart.slice(i, i + 2));
+    }
+
+    const formatted = `${isNegative ? "-" : ""}${intGroups.join(
+      " "
+    )}.${fracGroups.join(" ")}`;
+    return <span className={className}>{formatted}</span>;
+  }
+
+  const groups: string[] = [];
+  let remaining = unsigned;
   while (remaining.length > 2) {
     const group = remaining.slice(-2);
     groups.unshift(group);
     remaining = remaining.slice(0, -2);
   }
+  if (remaining.length > 0) groups.unshift(remaining);
 
-  if (remaining.length > 0) {
-    groups.unshift(remaining);
-  }
-
-  const formatted = groups.join(" ");
-
+  const formatted = `${isNegative ? "-" : ""}${groups.join(" ")}`;
   return <span className={className}>{formatted}</span>;
 }
 
 function formatDecimal(value: string, className: string): React.ReactElement {
-  if (!value || value === "0") {
+  if (!value) {
     return <span className={className}>{value}</span>;
   }
 
-  // Add commas every 3 digits from right to left
-  const formatted = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const isNegative = value.startsWith("-");
+  const unsigned = isNegative ? value.slice(1) : value;
 
+  if (unsigned.includes(".")) {
+    const [intPartRaw, fracPartRaw] = unsigned.split(".");
+    const intPart = intPartRaw || "0";
+    const fracPart = fracPartRaw || "";
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    const formatted = `${isNegative ? "-" : ""}${intFormatted}.${fracPart}`;
+    return <span className={className}>{formatted}</span>;
+  }
+
+  const intFormatted = unsigned.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const formatted = `${isNegative ? "-" : ""}${intFormatted}`;
   return <span className={className}>{formatted}</span>;
 }

@@ -15,6 +15,7 @@ import { OctalToBinaryConversion } from "./conversions/octal-to-binary";
 import { BinaryToHexadecimalConversion } from "./conversions/binary-to-hexadecimal";
 import { StepHeader } from "./ui/step-header";
 import { DecimalToBinaryResults } from "@/components/results/decimal-to-binary";
+import { BinaryToDecimalResults } from "@/components/results/binary-to-decimal";
 import { DecimalOtherConversion } from "@/components/results/base/decimal-other";
 import { FallbackGeneric } from "@/components/results/base/fallback-generic";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -142,6 +143,15 @@ export function ConversionResultsPanel({
                 onChange={(v) => setViewMode(v as "unsigned" | "signed")}
               />
             )}
+
+          {result.inputBase === "binary" &&
+            result.outputBase === "decimal" &&
+            !result.input.trim().startsWith("-") && (
+              <ResultSelector
+                value={viewMode}
+                onChange={(v) => setViewMode(v as "unsigned" | "signed")}
+              />
+            )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -153,6 +163,17 @@ export function ConversionResultsPanel({
               result.input.trim().startsWith("-") ? viewMode : "unsigned"
             }
             showFlags={showFlags}
+          />
+        )}
+
+        {result.inputBase === "binary" && result.outputBase === "decimal" && (
+          <BinaryToDecimalResults
+            result={result}
+            viewMode={
+              result.input.trim().startsWith("-")
+                ? "signed"
+                : (viewMode as "unsigned" | "signed")
+            }
           />
         )}
 

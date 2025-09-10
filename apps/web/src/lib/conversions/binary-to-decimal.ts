@@ -136,34 +136,50 @@ export function binaryToDecimal(
     }
   }
 
-  // Handle explicit negative sign or two's complement
-  let finalDecimal: number | bigint = decimal;
-  let isNegative = isExplicitlyNegative;
+  // Compute unsigned and signed (two's complement) interpretations
+  const [integerPart, fractionalPart = ""] = binaryWithoutSign.split(".");
+  const integerBitLength = integerPart.length || 0;
+  const unsignedDecimal = decimal;
 
-  // If explicitly negative, apply the sign
+  let signedDecimal: number | bigint;
   if (isExplicitlyNegative) {
-    finalDecimal = useBigInt ? -(decimal as bigint) : -(decimal as number);
-  } else if (specifiedBits && binaryWithoutSign.startsWith("1")) {
-    // Apply two's complement if specifiedBits indicates signed representation
-    if (useBigInt) {
-      const maxValue = BigInt(1) << BigInt(bitWidth);
-      finalDecimal = (decimal as bigint) - maxValue;
+    signedDecimal = useBigInt
+      ? -(unsignedDecimal as bigint)
+      : -(unsignedDecimal as number);
+  } else {
+    const leadingOne = integerPart.startsWith("1");
+    if (leadingOne) {
+      if (useBigInt) {
+        signedDecimal =
+          (unsignedDecimal as bigint) - (BigInt(1) << BigInt(integerBitLength));
+      } else {
+        signedDecimal =
+          (unsignedDecimal as number) - Math.pow(2, integerBitLength);
+      }
     } else {
-      finalDecimal = (decimal as number) - Math.pow(2, bitWidth);
+      signedDecimal = unsignedDecimal;
     }
-    isNegative = true;
   }
+
+  const finalUnsignedStr = formatDecimalOutput(unsignedDecimal as number);
+  const finalSignedStr = formatDecimalOutput(signedDecimal as number);
+  const isNegative =
+    typeof signedDecimal === "bigint"
+      ? signedDecimal < BigInt(0)
+      : (signedDecimal as number) < 0;
 
   const flags = {
     sign: isNegative,
-    zero: finalDecimal === 0 || finalDecimal === BigInt(0),
+    zero:
+      (typeof signedDecimal === "bigint" && signedDecimal === BigInt(0)) ||
+      (typeof signedDecimal === "number" && signedDecimal === 0),
     overflow: false,
   };
 
   return {
     input: binary,
     inputBase: "binary",
-    output: formatDecimalOutput(finalDecimal),
+    output: finalUnsignedStr,
     outputBase: "decimal",
     steps,
     hasFractionalPart,
@@ -171,7 +187,7 @@ export function binaryToDecimal(
     fractionalSteps,
     isNegative,
     magnitude: binaryWithoutSign,
-    signedResult: formatDecimalOutput(finalDecimal),
+    signedResult: finalSignedStr,
     flags,
   };
 }
