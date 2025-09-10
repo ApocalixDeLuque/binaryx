@@ -460,7 +460,9 @@ export function InputResultsPanel({
                 <Label className="text-sm font-medium">
                   {needsDualResults()
                     ? isBinaryToDecimal
-                      ? `Decimal sin signo`
+                      ? getInputSign(input)
+                        ? `Decimal`
+                        : `Decimal sin signo`
                       : `Binario sin signo (${getUnsignedBitSpanLabel()})`
                     : "Resultado"}
                 </Label>
@@ -473,7 +475,9 @@ export function InputResultsPanel({
                               result.magnitude || ""
                             }`
                           : isBinaryInput(input) && toBase === "decimal"
-                          ? result.output || ""
+                          ? getInputSign(input)
+                            ? result.signedResult || result.output || ""
+                            : result.output || ""
                           : result.output || ""
                       }
                       base={isBinaryToDecimal ? "decimal" : "binary"}

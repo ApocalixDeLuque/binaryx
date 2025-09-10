@@ -86,7 +86,7 @@ export interface ConversionResult {
  */
 export function decimalToOctal(decimal: number | BigNumber): ConversionResult {
   const steps: ConversionStep[] = [];
-  const integerSteps: Array<{ quotient: number; remainder: number }> = [];
+  const integerSteps: Array<{ quotient: number | BigNumber; remainder: number }> = [];
   const fractionalSteps: Array<{ value: number; bit: number }> = [];
 
   // Handle BigNumber input
@@ -104,7 +104,11 @@ export function decimalToOctal(decimal: number | BigNumber): ConversionResult {
   if (quotient.gt(0) || !hasFractionalPart) {
     while (quotient.gt(0)) {
       const remainder = quotient.mod(8).toNumber();
-      integerSteps.push({ quotient: quotient.toNumber(), remainder });
+      // Preserve BigNumber quotients for large values to avoid precision loss
+      const qOut = quotient.gt(Number.MAX_SAFE_INTEGER)
+        ? quotient
+        : (quotient.toNumber() as number);
+      integerSteps.push({ quotient: qOut, remainder });
       remainders.unshift(remainder.toString());
       quotient = quotient.div(8).integerValue(BigNumber.ROUND_DOWN);
     }
@@ -112,25 +116,66 @@ export function decimalToOctal(decimal: number | BigNumber): ConversionResult {
 
   let magnitude = remainders.join("") || "0";
 
-  // Fractional part conversion (only for regular numbers, not BigNumbers for now)
+  // Fractional part conversion using BigNumber for precision
   let fractionalResult = "";
-  if (hasFractionalPart && !isBigNumber) {
-    let fractionalPart = absValue.toNumber() - Math.floor(absValue.toNumber());
-    const fractionalBits: string[] = [];
+  if (hasFractionalPart) {
+    // Extract fractional part as BigNumber precisely
+    const intPart = absValue.integerValue(BigNumber.ROUND_DOWN);
+    let fracPart = absValue.minus(intPart); // 0 <= fracPart < 1
 
-    // Initial fractional step
-    fractionalSteps.push({ value: fractionalPart, bit: -1 }); // Special marker for initial
+    // Record initial fractional value for the UI table (as number for display)
+    fractionalSteps.push({ value: fracPart.toNumber(), bit: -1 });
 
-    while (fractionalPart > 0 && fractionalBits.length < 10) {
-      fractionalPart *= 8;
-      const bit = Math.floor(fractionalPart);
-      fractionalSteps.push({ value: fractionalPart, bit });
-      fractionalBits.push(bit.toString());
-      fractionalPart -= bit;
+    // Target precision (fractional octal digits)
+    const PRECISION = 20; // matches expected output rounding in tests
+
+    // Compute PRECISION + 1 digits to determine rounding
+    const digits: number[] = [];
+    for (let i = 0; i < PRECISION + 1 && !fracPart.isZero(); i++) {
+      fracPart = fracPart.times(8);
+      const digitBN = fracPart.integerValue(BigNumber.ROUND_FLOOR);
+      const digit = digitBN.toNumber(); // 0..7
+      digits.push(digit);
+      // Push step for UI (store the intermediate value after multiplication)
+      fractionalSteps.push({ value: fracPart.toNumber(), bit: digit });
+      fracPart = fracPart.minus(digitBN);
     }
 
-    fractionalResult = fractionalBits.join("");
-    magnitude += "." + fractionalResult;
+    // Rounding in base-8: if next digit >= 4, round up last kept digit
+    if (digits.length > PRECISION) {
+      const next = digits[PRECISION];
+      let kept = digits.slice(0, PRECISION);
+      if (next >= 4) {
+        // propagate carry in base-8
+        let carry = 1;
+        for (let p = kept.length - 1; p >= 0 && carry; p--) {
+          if (kept[p] < 7) {
+            kept[p] += 1;
+            carry = 0;
+          } else {
+            kept[p] = 0;
+          }
+        }
+        if (carry) {
+          // All fractional digits carried over; bump integer magnitude by 1
+          // Convert current integer magnitude (octal) to BigNumber and add 1
+          const currentInt = new BigNumber(remainders.join("") || "0", 8);
+          const bumped = currentInt.plus(1);
+          remainders.length = 0;
+          remainders.push(...bumped.toString(8).split(""));
+          kept = kept.map((d) => d); // already zeroed by carry loop
+        }
+      }
+      fractionalResult = kept.map((d) => d.toString()).join("");
+    } else {
+      fractionalResult = digits.map((d) => d.toString()).join("");
+    }
+
+    if (fractionalResult) {
+      magnitude = (remainders.join("") || "0") + "." + fractionalResult;
+    } else {
+      magnitude = remainders.join("") || "0";
+    }
   }
 
   // Handle signed representation - for octal, just add negative sign
@@ -197,7 +242,7 @@ export function decimalToHexadecimal(
   decimal: number | BigNumber
 ): ConversionResult {
   const steps: ConversionStep[] = [];
-  const integerSteps: Array<{ quotient: number; remainder: number }> = [];
+  const integerSteps: Array<{ quotient: number | BigNumber; remainder: number }> = [];
   const fractionalSteps: Array<{ value: number; bit: number }> = [];
 
   // Handle BigNumber input
@@ -217,7 +262,10 @@ export function decimalToHexadecimal(
   if (quotient.gt(0) || !hasFractionalPart) {
     while (quotient.gt(0)) {
       const remainder = quotient.mod(16).toNumber();
-      integerSteps.push({ quotient: quotient.toNumber(), remainder });
+      const qOut = quotient.gt(Number.MAX_SAFE_INTEGER)
+        ? quotient
+        : (quotient.toNumber() as number);
+      integerSteps.push({ quotient: qOut, remainder });
       remainders.unshift(hexDigits[remainder]);
       quotient = quotient.div(16).integerValue(BigNumber.ROUND_DOWN);
     }
@@ -225,25 +273,58 @@ export function decimalToHexadecimal(
 
   let magnitude = remainders.join("") || "0";
 
-  // Fractional part conversion (only for regular numbers, not BigNumbers for now)
+  // Fractional part conversion using BigNumber for precision (20 digits)
   let fractionalResult = "";
-  if (hasFractionalPart && !isBigNumber) {
-    let fractionalPart = absValue.toNumber() - Math.floor(absValue.toNumber());
-    const fractionalBits: string[] = [];
+  if (hasFractionalPart) {
+    const intPart = absValue.integerValue(BigNumber.ROUND_DOWN);
+    let fracPart = absValue.minus(intPart);
 
-    // Initial fractional step
-    fractionalSteps.push({ value: fractionalPart, bit: -1 }); // Special marker for initial
+    // Initial fractional step marker
+    fractionalSteps.push({ value: fracPart.toNumber(), bit: -1 });
 
-    while (fractionalPart > 0 && fractionalBits.length < 10) {
-      fractionalPart *= 16;
-      const bit = Math.floor(fractionalPart);
-      fractionalSteps.push({ value: fractionalPart, bit });
-      fractionalBits.push(hexDigits[bit]);
-      fractionalPart -= bit;
+    const PRECISION = 20;
+    const digits: number[] = [];
+    for (let i = 0; i < PRECISION + 1 && !fracPart.isZero(); i++) {
+      fracPart = fracPart.times(16);
+      const digitBN = fracPart.integerValue(BigNumber.ROUND_FLOOR);
+      const digit = digitBN.toNumber();
+      digits.push(digit);
+      fractionalSteps.push({ value: fracPart.toNumber(), bit: digit });
+      fracPart = fracPart.minus(digitBN);
     }
 
-    fractionalResult = fractionalBits.join("");
-    magnitude += "." + fractionalResult;
+    // Round last digit in base-16 using next digit
+    if (digits.length > PRECISION) {
+      const next = digits[PRECISION];
+      let kept = digits.slice(0, PRECISION);
+      if (next >= 8) {
+        let carry = 1;
+        for (let p = kept.length - 1; p >= 0 && carry; p--) {
+          if (kept[p] < 15) {
+            kept[p] += 1;
+            carry = 0;
+          } else {
+            kept[p] = 0;
+          }
+        }
+        if (carry) {
+          // Carry overflow into integer hex part
+          const currentInt = new BigNumber(remainders.join("") || "0", 16);
+          const bumped = currentInt.plus(1);
+          remainders.length = 0;
+          remainders.push(...bumped.toString(16).toUpperCase().split(""));
+        }
+      }
+      fractionalResult = kept.map((d) => hexDigits[d]).join("");
+    } else {
+      fractionalResult = digits.map((d) => hexDigits[d]).join("");
+    }
+
+    if (fractionalResult) {
+      magnitude = (remainders.join("") || "0") + "." + fractionalResult;
+    } else {
+      magnitude = remainders.join("") || "0";
+    }
   }
 
   // Handle signed representation - for hexadecimal, use two's complement
@@ -253,8 +334,9 @@ export function decimalToHexadecimal(
 
   // For large numbers, we need to ensure consistent bit width for both positive and negative
   const shouldUseLargeFormat =
-    isBigNumber ||
-    (typeof decimal === "number" && Math.abs(decimal) > 0x7fffffff);
+    !hasFractionalPart &&
+    (isBigNumber ||
+      (typeof decimal === "number" && Math.abs(decimal) > 0x7fffffff));
 
   if (shouldUseLargeFormat) {
     // Determine the appropriate bit width based on the number size
@@ -289,28 +371,30 @@ export function decimalToHexadecimal(
     // Main result is direct hex with negative sign
     signedResult = "-" + magnitude;
 
-    // Calculate two's complement separately
-    const binaryLength = decimalValue.toString(2).length;
-    let bitWidth;
+    // Calculate two's complement separately for integer values only
+    if (!hasFractionalPart) {
+      const binaryLength = decimalValue.toString(2).length;
+      let bitWidth;
 
-    if (binaryLength <= 32) {
-      bitWidth = 32; // 4 bytes
-    } else if (binaryLength <= 48) {
-      bitWidth = 48; // 6 bytes
-    } else {
-      bitWidth = 64; // 8 bytes - use 64-bit for larger numbers
+      if (binaryLength <= 32) {
+        bitWidth = 32; // 4 bytes
+      } else if (binaryLength <= 48) {
+        bitWidth = 48; // 6 bytes
+      } else {
+        bitWidth = 64; // 8 bytes - use 64-bit for larger numbers
+      }
+
+      // For negative integers, calculate two's complement: 2^bitWidth - |value|
+      const maxValue = BigInt(1) << BigInt(bitWidth);
+      const bigIntValue = isBigNumber
+        ? BigInt((decimalValue as BigNumber).toString())
+        : BigInt(decimalValue as number);
+      const twosComplementValue = maxValue - bigIntValue;
+      twosComplementHex = twosComplementValue
+        .toString(16)
+        .toUpperCase()
+        .padStart(bitWidth / 4, "0");
     }
-
-    // For negative numbers, calculate two's complement: 2^bitWidth - |value|
-    const maxValue = BigInt(1) << BigInt(bitWidth);
-    const bigIntValue = isBigNumber
-      ? BigInt((decimalValue as BigNumber).toString())
-      : BigInt(decimalValue as number);
-    const twosComplementValue = maxValue - bigIntValue;
-    twosComplementHex = twosComplementValue
-      .toString(16)
-      .toUpperCase()
-      .padStart(bitWidth / 4, "0");
   }
 
   return {
@@ -688,21 +772,12 @@ export function convertBetweenBases(
           );
         }
 
-        let useBigNumberOctal = false;
-        if (
-          cleanInput.length > 15 &&
-          !cleanInput.includes(".") &&
-          !cleanInput.includes("e") &&
-          !cleanInput.includes("E")
-        ) {
-          const testParse = parseFloat(cleanInput);
-          if (
-            testParse.toString().includes("e") ||
-            testParse.toString().includes("E")
-          ) {
-            useBigNumberOctal = true;
-          }
-        }
+        // Use BigNumber for fractional inputs or very large integers to avoid precision loss
+        const useBigNumberOctal =
+          cleanInput.includes(".") ||
+          (cleanInput.length > 15 &&
+            !cleanInput.includes("e") &&
+            !cleanInput.includes("E"));
 
         if (useBigNumberOctal) {
           const bigDecimalValue = new BigNumber(cleanInput);
@@ -728,21 +803,12 @@ export function convertBetweenBases(
           );
         }
 
-        let useBigNumberHex = false;
-        if (
-          cleanInput.length > 15 &&
-          !cleanInput.includes(".") &&
-          !cleanInput.includes("e") &&
-          !cleanInput.includes("E")
-        ) {
-          const testParse = parseFloat(cleanInput);
-          if (
-            testParse.toString().includes("e") ||
-            testParse.toString().includes("E")
-          ) {
-            useBigNumberHex = true;
-          }
-        }
+        // Use BigNumber for fractional inputs or very large integers to avoid precision loss
+        const useBigNumberHex =
+          cleanInput.includes(".") ||
+          (cleanInput.length > 15 &&
+            !cleanInput.includes("e") &&
+            !cleanInput.includes("E"));
 
         if (useBigNumberHex) {
           const bigDecimalValue = new BigNumber(cleanInput);

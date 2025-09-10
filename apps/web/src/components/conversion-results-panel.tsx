@@ -1,24 +1,14 @@
 "use client";
 
-import BigNumber from "bignumber.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown } from "lucide-react";
 import type { ConversionResult, BaseType } from "@/lib/base-conversions";
-import {
-  getBaseName,
-  getBaseNumber,
-  formatDisplayValue,
-} from "@/lib/base-conversions";
-import { DecimalToBinary } from "./conversions/decimal-to-binary/index";
 import { BinaryToOctalConversion } from "./conversions/binary-to-octal";
 import { OctalToBinaryConversion } from "./conversions/octal-to-binary";
 import { BinaryToHexadecimalConversion } from "./conversions/binary-to-hexadecimal";
-import { StepHeader } from "./ui/step-header";
 import { DecimalToBinaryResults } from "@/components/results/decimal-to-binary";
 import { BinaryToDecimalResults } from "@/components/results/binary-to-decimal";
-import { DecimalOtherConversion } from "@/components/results/base/decimal-other";
-import { FallbackGeneric } from "@/components/results/base/fallback-generic";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DecimalToOctalResults } from "@/components/results/decimal-to-octal";
+import { DecimalToHexadecimalResults } from "@/components/results/decimal-to-hexadecimal";
 import React from "react";
 import { ResultSelector } from "./results/base/selector";
 
@@ -177,6 +167,15 @@ export function ConversionResultsPanel({
           />
         )}
 
+        {result.inputBase === "decimal" && result.outputBase === "octal" && (
+          <DecimalToOctalResults result={result} />
+        )}
+
+        {result.inputBase === "decimal" &&
+          result.outputBase === "hexadecimal" && (
+            <DecimalToHexadecimalResults result={result} />
+          )}
+
         {result.inputBase === "binary" && result.outputBase === "octal" && (
           <BinaryToOctalConversion result={result} />
         )}
@@ -189,12 +188,6 @@ export function ConversionResultsPanel({
           result.outputBase === "hexadecimal" && (
             <BinaryToHexadecimalConversion result={result} />
           )}
-
-        <DecimalOtherConversion result={result} />
-
-        <FallbackGeneric result={result} />
-
-        {/* Flags moved into DecimalToBinaryResults */}
       </CardContent>
     </Card>
   );

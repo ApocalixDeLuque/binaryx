@@ -213,7 +213,6 @@ export function NumberCard({
           <TabsContent value="binary" className="space-y-2">
             <div className="space-y-3">
               <Label htmlFor={`${title}-binary`}>Binario</Label>
-
               {/* Binary Input Type Selector */}
               <div className="flex gap-2">
                 <button

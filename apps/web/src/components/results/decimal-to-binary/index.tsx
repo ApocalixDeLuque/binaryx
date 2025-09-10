@@ -22,8 +22,6 @@ export function DecimalToBinaryResults({
   const isNegative = result.input.trim().startsWith("-");
   return (
     <div className="space-y-6">
-      {/* Selector handled by parent header */}
-
       <DecimalToBinarySummary
         result={result}
         viewMode={isNegative ? viewMode : "unsigned"}

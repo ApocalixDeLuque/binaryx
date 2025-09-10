@@ -210,6 +210,14 @@ export function BinaryToDecimalSteps({ result, viewMode }: StepsProps) {
           </code>
         </div>
       )}
+      {explicitNegative && (
+        <div className="mt-2 text-xs">
+          <div className="text-muted-foreground">Aplicar signo negativo:</div>
+          <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+            -{union}
+          </code>
+        </div>
+      )}
     </Section>
   );
 }
