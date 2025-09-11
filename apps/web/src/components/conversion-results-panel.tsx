@@ -2,9 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ConversionResult, BaseType } from "@/lib/base-conversions";
-import { BinaryToOctalConversion } from "./conversions/binary-to-octal";
+import { BinaryToOctalResults } from "@/components/results/binary-to-octal";
 import { OctalToBinaryConversion } from "./conversions/octal-to-binary";
-import { BinaryToHexadecimalConversion } from "./conversions/binary-to-hexadecimal";
+import { BinaryToHexadecimalResults } from "@/components/results/binary-to-hexadecimal";
+import { HexadecimalToBinaryResults } from "@/components/results/hexadecimal-to-binary";
+import { HexadecimalToDecimalResults } from "@/components/results/hexadecimal-to-decimal";
+import { HexadecimalToOctalResults } from "@/components/results/hexadecimal-to-octal";
 import { DecimalToBinaryResults } from "@/components/results/decimal-to-binary";
 import { BinaryToDecimalResults } from "@/components/results/binary-to-decimal";
 import { DecimalToOctalResults } from "@/components/results/decimal-to-octal";
@@ -177,7 +180,7 @@ export function ConversionResultsPanel({
           )}
 
         {result.inputBase === "binary" && result.outputBase === "octal" && (
-          <BinaryToOctalConversion result={result} />
+          <BinaryToOctalResults result={result} />
         )}
 
         {result.inputBase === "octal" && result.outputBase === "binary" && (
@@ -186,8 +189,20 @@ export function ConversionResultsPanel({
 
         {result.inputBase === "binary" &&
           result.outputBase === "hexadecimal" && (
-            <BinaryToHexadecimalConversion result={result} />
+            <BinaryToHexadecimalResults result={result} />
           )}
+
+        {result.inputBase === "hexadecimal" && result.outputBase === "binary" && (
+          <HexadecimalToBinaryResults result={result} />
+        )}
+
+        {result.inputBase === "hexadecimal" && result.outputBase === "decimal" && (
+          <HexadecimalToDecimalResults result={result} />
+        )}
+
+        {result.inputBase === "hexadecimal" && result.outputBase === "octal" && (
+          <HexadecimalToOctalResults result={result} />
+        )}
       </CardContent>
     </Card>
   );
