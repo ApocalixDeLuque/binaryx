@@ -374,21 +374,32 @@ export function decimalToHexadecimal(
   // Do NOT compute or expose two's complement for positive inputs.
   // Only handle signed/two's complement when the original input is negative.
   if (shouldUseLargeFormat && isNegative) {
-    // Prefer at least 64-bit for C2 view; scale up if needed
-    const binaryLengthNeg = isBigNumber
-      ? bigDecimal.toString(2).length
-      : decimalValue.toString(2).length;
-    const nextMultipleOf = (n: number, m: number) => Math.ceil(n / m) * m;
-    const bitWidth = Math.max(64, nextMultipleOf(binaryLengthNeg + 1, 8));
+    // Determine minimal standard width (16, 32, 64, 128, ...) that can hold |value| in C2
+    const absIntStr = isBigNumber
+      ? (decimalValue as BigNumber).integerValue(BigNumber.ROUND_DOWN).toString()
+      : Math.trunc(decimalValue as number).toString();
+    const N = BigInt(absIntStr);
+    // Bit length of magnitude
+    const magnitudeBits = Math.max(1, N.toString(2).length);
+    const isPow2 = (N & (N - 1n)) === 0n;
+    // Minimal signed bits k such that N <= 2^(k-1)
+    const requiredSignedBits = isPow2 ? magnitudeBits : magnitudeBits + 1;
+    const requiredBytes = Math.ceil(requiredSignedBits / 8);
+    // Round up bytes to the minimal power-of-two byte width, with a minimum of 2 bytes (16 bits)
+    const nextPow2Bytes = (b: number): number => {
+      let x = 1;
+      while (x < b) x <<= 1;
+      return Math.max(2, x);
+    };
+    const byteWidth = nextPow2Bytes(requiredBytes);
+    const bitWidth = byteWidth * 8;
 
     // Main result is direct hex with negative sign
     signedResult = "-" + magnitude;
 
     // Calculate two's complement for negative integers: 2^bitWidth - |value|
     const maxValue = BigInt(1) << BigInt(bitWidth);
-    const bigIntValue = isBigNumber
-      ? BigInt((decimalValue as BigNumber).toString())
-      : BigInt(decimalValue as number);
+    const bigIntValue = N;
     const twosComplementValue = maxValue - bigIntValue;
     twosComplementHex = twosComplementValue
       .toString(16)
@@ -424,8 +435,8 @@ export function decimalToHexadecimal(
 export function hexadecimalToDecimal(hex: string): ConversionResult {
   const steps: ConversionStep[] = [];
   const clean = hex.replace(/\s/g, "");
-  const isNegative = clean.startsWith("-");
-  const unsigned = isNegative ? clean.slice(1) : clean;
+  const isExplicitlyNegative = clean.startsWith("-");
+  const unsigned = isExplicitlyNegative ? clean.slice(1) : clean;
 
   const [intRaw, fracRaw = ""] = unsigned.split(".");
 
@@ -467,18 +478,41 @@ export function hexadecimalToDecimal(hex: string): ConversionResult {
   }
 
   const total = intBN.plus(fracBN);
-  // Fixed 20 fractional digits to align with UI precision
-  const unsignedStr = fracRaw.length > 0 ? total.toFixed(20) : total.toFixed();
-  const signedStr = isNegative ? `-${unsignedStr}` : unsignedStr;
+
+  // Unsigned result string (fixed 20 fractional digits if fractional)
+  const finalUnsignedStr = fracRaw.length > 0 ? total.toFixed(20) : total.toFixed();
+
+  // Signed (two's complement) interpretation
+  let signedBN = total;
+  if (isExplicitlyNegative) {
+    signedBN = total.negated();
+  } else if (fracRaw.length === 0) {
+    // Only apply C2 for pure integers with no explicit '-'
+    const hasInt = (intRaw || "").length > 0;
+    const msNibble = (intRaw || "0")[0];
+    const msVal = parseInt(msNibble || "0", 16);
+    const leadingNegative = hasInt && msVal >= 8;
+    if (leadingNegative) {
+      const shift = new BigNumber(16).exponentiatedBy((intRaw || "").length);
+      signedBN = total.minus(shift);
+    }
+  } else {
+    // Fractional inputs: disable C2; signed equals unsigned
+    signedBN = total;
+  }
+
+  const finalSignedStr = fracRaw.length > 0 ? signedBN.toFixed(20) : signedBN.toFixed();
+  const isNegative = signedBN.isNegative();
 
   return {
     input: hex.toUpperCase(),
     inputBase: "hexadecimal",
-    output: signedStr,
+    output: finalUnsignedStr,
     outputBase: "decimal",
     steps,
     hasFractionalPart: fracRaw.length > 0,
     isNegative,
+    signedResult: finalSignedStr,
   };
 }
 

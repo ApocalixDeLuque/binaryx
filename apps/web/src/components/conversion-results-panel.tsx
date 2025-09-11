@@ -148,9 +148,20 @@ export function ConversionResultsPanel({
               />
             )}
 
+          {result.inputBase === "hexadecimal" &&
+            result.outputBase === "decimal" &&
+            !result.input.trim().startsWith("-") &&
+            !result.hasFractionalPart && (
+              <ResultSelector
+                value={viewMode}
+                onChange={(v) => setViewMode(v as "unsigned" | "signed")}
+              />
+            )}
+
           {result.inputBase === "decimal" &&
             result.outputBase === "hexadecimal" &&
-            result.input.trim().startsWith("-") && (
+            result.input.trim().startsWith("-") &&
+            !result.input.includes(".") && (
               <ResultSelector
                 value={viewMode}
                 onChange={(v) => setViewMode(v as "unsigned" | "signed")}
@@ -219,7 +230,14 @@ export function ConversionResultsPanel({
 
         {result.inputBase === "hexadecimal" &&
           result.outputBase === "decimal" && (
-            <HexadecimalToDecimalResults result={result} />
+            <HexadecimalToDecimalResults
+              result={result}
+              viewMode={
+                result.input.trim().startsWith("-")
+                  ? "signed"
+                  : (viewMode as "unsigned" | "signed")
+              }
+            />
           )}
 
         {result.inputBase === "hexadecimal" &&

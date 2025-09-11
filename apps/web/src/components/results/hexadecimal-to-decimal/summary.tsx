@@ -7,9 +7,12 @@ import { FormattedNumber } from "@/components/formatted-number";
 
 interface SummaryProps {
   result: ConversionResult;
+  viewMode: "unsigned" | "signed";
 }
 
-export function HexadecimalToDecimalSummary({ result }: SummaryProps) {
+export function HexadecimalToDecimalSummary({ result, viewMode }: SummaryProps) {
+  const explicitNegative = result.input.trim().startsWith("-");
+  const canSigned = !result.hasFractionalPart && !explicitNegative;
   return (
     <Section title="Resumen">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -23,7 +26,14 @@ export function HexadecimalToDecimalSummary({ result }: SummaryProps) {
         <div>
           <div className="text-sm text-muted-foreground">Resultado</div>
           <div className="font-mono text-sm break-all whitespace-pre-wrap">
-            <FormattedNumber value={result.output} base="decimal" />
+            <FormattedNumber
+              value={
+                canSigned && viewMode === "signed"
+                  ? result.signedResult || result.output
+                  : result.output
+              }
+              base="decimal"
+            />
           </div>
           <div className="text-xs text-muted-foreground">Base Decimal</div>
         </div>

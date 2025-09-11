@@ -224,7 +224,7 @@ export function ConversionPanel() {
             />
 
             {/* Component 2: Configuration Panel */}
-            <ConfigurationPanel
+            {/* <ConfigurationPanel
               roundingMode={roundingMode}
               onRoundingModeChange={setRoundingMode}
               showFlags={showFlags}
@@ -235,13 +235,13 @@ export function ConversionPanel() {
               onUseDigitGroupingChange={setUseDigitGrouping}
               showSignedTwosComplement={showSignedTwosComplement}
               onShowSignedTwosComplementChange={setShowSignedTwosComplement}
-            />
+            /> */}
 
             {/* Component 3: Examples (placeholder for now) */}
-            <ExamplesPanel />
+            {/* <ExamplesPanel /> */}
 
             {/* Component 4: Export/Share (placeholder for now) */}
-            <ExportPanel />
+            {/* <ExportPanel /> */}
           </div>
 
           {/* Main Content - Components 5-6 */}

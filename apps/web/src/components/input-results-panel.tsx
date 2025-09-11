@@ -434,14 +434,84 @@ export function InputResultsPanel({
     return `${len} caracteres`;
   };
 
-  // Determine if we should show the secondary (signed/C2) result
+  // Determine common scenarios and when to show both outputs
   const isDecimalToBinary = fromBase === "decimal" && toBase === "binary";
   const isDecimalToHex = fromBase === "decimal" && toBase === "hexadecimal";
   const isBinaryToDecimal = fromBase === "binary" && toBase === "decimal";
+  const isHexToDecimal = fromBase === "hexadecimal" && toBase === "decimal";
+  const inputClean = input.replace(/\s/g, "");
+  const hexHasFraction = isHexToDecimal && inputClean.includes(".");
+  const decimalHasFraction = isDecimalToHex && inputClean.includes(".");
+  const inputIsNegative = getInputSign(input);
+  // Show secondary result when:
+  // - decimal→binary and input is negative (C2)
+  // - binary→decimal and no explicit '-' (interpret as unsigned and signed)
+  // - decimal→hexadecimal always show both (unsigned + C2 if negative)
   const showSecondaryResult =
-    (isDecimalToBinary && getInputSign(input)) ||
-    (isBinaryToDecimal && !getInputSign(input)) ||
-    isDecimalToHex; // always show C2 for decimal→hex
+    (isDecimalToBinary && inputIsNegative) ||
+    (isBinaryToDecimal && !inputIsNegative) ||
+    (isHexToDecimal && !inputIsNegative && !hexHasFraction) ||
+    (isDecimalToHex && !decimalHasFraction);
+
+  // Primary result label, base and value
+  const primaryLabel = (() => {
+    if (isBinaryToDecimal || isHexToDecimal)
+      return inputIsNegative ? "Decimal" : "Decimal sin signo";
+    if (isDecimalToHex) return "Hexadecimal sin signo";
+    if (isDecimalToBinary)
+      return `Binario sin signo (${getUnsignedBitSpanLabel()})`;
+    return "Resultado";
+  })();
+  const primaryBase: BaseType =
+    isBinaryToDecimal || isHexToDecimal
+      ? "decimal"
+      : isDecimalToHex
+      ? "hexadecimal"
+      : isDecimalToBinary
+      ? "binary"
+      : toBase;
+  const primaryValue = (() => {
+    if (!result) return "";
+    if (isDecimalToBinary) {
+      return `${inputIsNegative ? "-" : ""}${result.magnitude || ""}`;
+    }
+    if (isBinaryToDecimal) {
+      return inputIsNegative
+        ? result.signedResult || result.output || ""
+        : result.output || "";
+    }
+    if (isHexToDecimal) {
+      return inputIsNegative
+        ? result.signedResult || result.output || ""
+        : result.output || "";
+    }
+    if (isDecimalToHex) {
+      return result.output || "";
+    }
+    return result.output || "";
+  })();
+
+  // Secondary (signed) result label, base and value
+  const secondaryLabel = (() => {
+    if (isBinaryToDecimal || isHexToDecimal)
+      return "Decimal con complemento a 2";
+    if (isDecimalToHex) return "Hexadecimal con complemento a 2";
+    return `Complemento a 2 (${getSignedBitSpanLabel()})`;
+  })();
+  const secondaryBase: BaseType =
+    isBinaryToDecimal || isHexToDecimal
+      ? "decimal"
+      : isDecimalToHex
+      ? "hexadecimal"
+      : "binary";
+  const secondaryValue = (() => {
+    if (!result) return "";
+    if (isDecimalToBinary) return result.signedResult || result.output || "";
+    if (isBinaryToDecimal) return result.signedResult || result.output || "";
+    if (isHexToDecimal) return result.signedResult || result.output || "";
+    if (isDecimalToHex) return result.twosComplementHex || result.output || "";
+    return result.output || "";
+  })();
 
   return (
     <Card>
@@ -485,36 +555,9 @@ export function InputResultsPanel({
           {result && (
             <div className="flex gap-3 items-start">
               <div className="flex-1">
-                <Label className="text-sm font-medium">
-                  {needsDualResults()
-                    ? isBinaryToDecimal
-                      ? getInputSign(input)
-                        ? `Decimal`
-                        : `Decimal sin signo`
-                      : isDecimalToHex
-                      ? `Hexadecimal`
-                      : `Binario sin signo (${getUnsignedBitSpanLabel()})`
-                    : "Resultado"}
-                </Label>
+                <Label className="text-sm font-medium">{primaryLabel}</Label>
                 <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
-                  {needsDualResults() ? (
-                    <FormattedNumber
-                      value={
-                        fromBase === "decimal" && toBase === "binary"
-                          ? `${getInputSign(input) ? "-" : ""}${
-                              result.magnitude || ""
-                            }`
-                          : isBinaryInput(input) && toBase === "decimal"
-                          ? getInputSign(input)
-                            ? result.signedResult || result.output || ""
-                            : result.output || ""
-                          : result.output || ""
-                      }
-                      base={isBinaryToDecimal ? "decimal" : "binary"}
-                    />
-                  ) : (
-                    <FormattedNumber value={result.output} base={toBase} />
-                  )}
+                  <FormattedNumber value={primaryValue} base={primaryBase} />
                 </div>
               </div>
               <DropdownMenu>
@@ -542,7 +585,12 @@ export function InputResultsPanel({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={() =>
-                      handleCopyPrimary(getFormattedResultForCopy(true))
+                      handleCopyPrimary(
+                        formatValueLikeFormattedNumber(
+                          primaryValue,
+                          primaryBase
+                        )
+                      )
                     }
                   >
                     <Copy className="h-4 w-4 mr-2" />
@@ -550,7 +598,12 @@ export function InputResultsPanel({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
-                      handleCopyPrimary(getFormattedResultForCopy(false))
+                      handleCopyPrimary(
+                        formatValueLikeFormattedNumber(
+                          primaryValue,
+                          primaryBase
+                        ).replace(/[\s,]/g, "")
+                      )
                     }
                   >
                     <Copy className="h-4 w-4 mr-2" />
@@ -562,34 +615,14 @@ export function InputResultsPanel({
           )}
 
           {/* Secondary Result Section (Optional) */}
-          {result && needsDualResults() && showSecondaryResult && (
+          {result && showSecondaryResult && (
             <div className="flex gap-3 items-start">
               <div className="flex-1">
-                <Label className="text-sm font-medium">
-                  {isBinaryToDecimal
-                    ? `Decimal con complemento a 2`
-                    : isDecimalToHex
-                    ? `Hexadecimal con complemento a 2`
-                    : `Complemento a 2 (${getSignedBitSpanLabel()})`}
-                </Label>
+                <Label className="text-sm font-medium">{secondaryLabel}</Label>
                 <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
                   <FormattedNumber
-                    value={
-                      fromBase === "decimal" && toBase === "binary"
-                        ? result.signedResult || result.output || ""
-                        : isBinaryInput(input) && toBase === "decimal"
-                        ? result.signedResult || result.output || ""
-                        : fromBase === "decimal" && toBase === "hexadecimal"
-                        ? result.twosComplementHex || result.output || ""
-                        : result.output || ""
-                    }
-                    base={
-                      isBinaryToDecimal
-                        ? "decimal"
-                        : isDecimalToHex
-                        ? "hexadecimal"
-                        : "binary"
-                    }
+                    value={secondaryValue}
+                    base={secondaryBase}
                   />
                 </div>
               </div>
@@ -618,7 +651,12 @@ export function InputResultsPanel({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={() =>
-                      handleCopySecondary(getFormattedSignedResultForCopy(true))
+                      handleCopySecondary(
+                        formatValueLikeFormattedNumber(
+                          secondaryValue,
+                          secondaryBase
+                        )
+                      )
                     }
                   >
                     <Copy className="h-4 w-4 mr-2" />
@@ -627,7 +665,10 @@ export function InputResultsPanel({
                   <DropdownMenuItem
                     onClick={() =>
                       handleCopySecondary(
-                        getFormattedSignedResultForCopy(false)
+                        formatValueLikeFormattedNumber(
+                          secondaryValue,
+                          secondaryBase
+                        ).replace(/[\s,]/g, "")
                       )
                     }
                   >
@@ -646,13 +687,22 @@ export function InputResultsPanel({
                 const hex = (result.twosComplementHex || "").toUpperCase();
                 const bytes = hex.match(/.{1,2}/g) || [];
                 let start = 0;
-                while (start < bytes.length - 1 && bytes[start] === "00") start++;
+                while (start < bytes.length - 1 && bytes[start] === "00")
+                  start++;
                 const trimmed = bytes.slice(start);
                 const big = trimmed;
                 const little = [...trimmed].reverse();
-                const Table = ({ title, arr }: { title: string; arr: string[] }) => (
+                const Table = ({
+                  title,
+                  arr,
+                }: {
+                  title: string;
+                  arr: string[];
+                }) => (
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">{title}</div>
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {title}
+                    </div>
                     <table className="w-full border text-xs">
                       <thead>
                         <tr className="bg-muted/50">
@@ -666,7 +716,10 @@ export function InputResultsPanel({
                       <tbody>
                         <tr>
                           {arr.map((b, idx) => (
-                            <td key={idx} className="px-2 py-1 border text-center font-mono">
+                            <td
+                              key={idx}
+                              className="px-2 py-1 border text-center font-mono"
+                            >
                               {b}
                             </td>
                           ))}
@@ -677,8 +730,8 @@ export function InputResultsPanel({
                 );
                 return (
                   <>
-                    <Table title="Little endian" arr={little} />
                     <Table title="Big endian" arr={big} />
+                    <Table title="Little endian" arr={little} />
                   </>
                 );
               })()}

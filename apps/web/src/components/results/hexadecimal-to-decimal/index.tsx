@@ -9,18 +9,19 @@ import { HexadecimalToDecimalFinal } from "./final";
 
 interface HexadecimalToDecimalResultsProps {
   result: ConversionResult;
+  viewMode: "unsigned" | "signed";
 }
 
 export function HexadecimalToDecimalResults({
   result,
+  viewMode,
 }: HexadecimalToDecimalResultsProps) {
   return (
     <div className="space-y-6">
-      <HexadecimalToDecimalSummary result={result} />
+      <HexadecimalToDecimalSummary result={result} viewMode={viewMode} />
       <HexadecimalToDecimalAnalysis result={result} />
-      <HexadecimalToDecimalSteps result={result} />
-      <HexadecimalToDecimalFinal result={result} />
+      <HexadecimalToDecimalSteps result={result} viewMode={viewMode} />
+      <HexadecimalToDecimalFinal result={result} viewMode={viewMode} />
     </div>
   );
 }
-

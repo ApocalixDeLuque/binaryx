@@ -215,12 +215,7 @@ export function DecimalToHexadecimalSteps({ result, viewMode }: StepsProps) {
                       {paddedMag}
                     </code>
                   </div>
-                  <div>
-                    3) Invertir nibbles (C1):
-                    <code className="ml-2 font-mono border rounded px-2 py-1 inline-block">
-                      {inv}
-                    </code>
-                  </div>
+                  <div>3) Invertir nibbles (C1):</div>
                   <div className="mt-2">
                     <div className="text-xs text-muted-foreground mb-1">
                       Tabla de inversión (15 − dígito):
@@ -262,6 +257,12 @@ export function DecimalToHexadecimalSteps({ result, viewMode }: StepsProps) {
                     </div>
                   </div>
                   <div>
+                    Resultado de la inversión:
+                    <code className="ml-2 font-mono border rounded px-2 py-1 inline-block">
+                      {inv}
+                    </code>
+                  </div>
+                  <div>
                     4) Sumar 1 → C2:
                     <code className="ml-2 font-mono border rounded px-2 py-1 inline-block">
                       {c2}
@@ -291,9 +292,7 @@ export function DecimalToHexadecimalSteps({ result, viewMode }: StepsProps) {
               return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <div className="text-muted-foreground mb-1">
-                      Little endian
-                    </div>
+                    <div className="text-muted-foreground mb-1">Big endian</div>
                     <table className="w-full border text-xs">
                       <thead>
                         <tr className="bg-muted/50">
@@ -302,7 +301,7 @@ export function DecimalToHexadecimalSteps({ result, viewMode }: StepsProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {little.map((b, idx) => (
+                        {big.map((b, idx) => (
                           <tr key={idx}>
                             <td className="px-2 py-1 border text-center">
                               {idx}
@@ -316,7 +315,9 @@ export function DecimalToHexadecimalSteps({ result, viewMode }: StepsProps) {
                     </table>
                   </div>
                   <div>
-                    <div className="text-muted-foreground mb-1">Big endian</div>
+                    <div className="text-muted-foreground mb-1">
+                      Little endian
+                    </div>
                     <table className="w-full border text-xs">
                       <thead>
                         <tr className="bg-muted/50">
@@ -325,7 +326,7 @@ export function DecimalToHexadecimalSteps({ result, viewMode }: StepsProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {big.map((b, idx) => (
+                        {little.map((b, idx) => (
                           <tr key={idx}>
                             <td className="px-2 py-1 border text-center">
                               {idx}

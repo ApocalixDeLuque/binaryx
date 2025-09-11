@@ -7,9 +7,12 @@ import { FormattedNumber } from "@/components/formatted-number";
 
 interface FinalProps {
   result: ConversionResult;
+  viewMode: "unsigned" | "signed";
 }
 
-export function HexadecimalToDecimalFinal({ result }: FinalProps) {
+export function HexadecimalToDecimalFinal({ result, viewMode }: FinalProps) {
+  const explicitNegative = result.input.trim().startsWith("-");
+  const canSigned = !result.hasFractionalPart && !explicitNegative;
   return (
     <Section title="Resultado final">
       <div className="grid gap-2 text-sm">
@@ -21,7 +24,14 @@ export function HexadecimalToDecimalFinal({ result }: FinalProps) {
         <div className="mt-2">
           <div className="text-muted-foreground">Resultado directo</div>
           <div className="font-mono">
-            <FormattedNumber value={result.output} base="decimal" />
+            <FormattedNumber
+              value={
+                canSigned && viewMode === "signed"
+                  ? result.signedResult || result.output
+                  : result.output
+              }
+              base="decimal"
+            />
           </div>
           <div className="text-xs text-muted-foreground">Base Decimal</div>
         </div>
@@ -29,4 +39,3 @@ export function HexadecimalToDecimalFinal({ result }: FinalProps) {
     </Section>
   );
 }
-
