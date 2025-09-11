@@ -138,7 +138,8 @@ export function InputResultsPanel({
         };
         const groupFrac = (s: string, size: number) => {
           const out: string[] = [];
-          for (let k = 0; k < s.length; k += size) out.push(s.slice(k, k + size));
+          for (let k = 0; k < s.length; k += size)
+            out.push(s.slice(k, k + size));
           return out.join(" ");
         };
         if (!f) return `${isNeg ? "-" : ""}${groupInt(i, 4)}`;
@@ -162,7 +163,8 @@ export function InputResultsPanel({
         };
         const groupFrac = (s: string, size: number) => {
           const out: string[] = [];
-          for (let k = 0; k < s.length; k += size) out.push(s.slice(k, k + size));
+          for (let k = 0; k < s.length; k += size)
+            out.push(s.slice(k, k + size));
           return out.join(" ");
         };
         if (!f) return `${isNeg ? "-" : ""}${groupInt(i, 3)}`;
@@ -186,7 +188,8 @@ export function InputResultsPanel({
         };
         const groupFrac = (s: string, size: number) => {
           const out: string[] = [];
-          for (let k = 0; k < s.length; k += size) out.push(s.slice(k, k + size));
+          for (let k = 0; k < s.length; k += size)
+            out.push(s.slice(k, k + size));
           return out.join(" ");
         };
         // Match FormattedNumber display: hex groups of 2
@@ -220,6 +223,8 @@ export function InputResultsPanel({
     const displayBase = needsDualResults()
       ? isBinaryInput(input)
         ? "decimal"
+        : fromBase === "decimal" && toBase === "hexadecimal"
+        ? "hexadecimal"
         : "binary"
       : toBase;
 
@@ -228,6 +233,8 @@ export function InputResultsPanel({
     const rawValue = needsDualResults()
       ? fromBase === "decimal" && toBase === "binary"
         ? `${getInputSign(input) ? "-" : ""}${result.magnitude || ""}`
+        : fromBase === "decimal" && toBase === "hexadecimal"
+        ? result.output || ""
         : isBinaryInput(input) && toBase === "decimal"
         ? result.output || ""
         : result.output || ""
@@ -245,16 +252,22 @@ export function InputResultsPanel({
   ): string => {
     if (!result || !needsDualResults()) return "";
 
-    // Use signed for decimal→binary, and for binary→decimal use signedResult too
+    // Use signed for decimal→binary, decimal→hexadecimal (C2), and binary→decimal
     const rawValue =
       (fromBase === "decimal" && toBase === "binary") ||
       (isBinaryInput(input) && toBase === "decimal")
         ? result.signedResult || result.output || ""
+        : fromBase === "decimal" && toBase === "hexadecimal"
+        ? result.twosComplementHex || result.output || ""
         : result.output || "";
 
     const formatted = formatValueLikeFormattedNumber(
       rawValue,
-      isBinaryInput(input) && toBase === "decimal" ? "decimal" : "binary"
+      isBinaryInput(input) && toBase === "decimal"
+        ? "decimal"
+        : toBase === "hexadecimal" && fromBase === "decimal"
+        ? "hexadecimal"
+        : "binary"
     );
     return withSpacing ? formatted : formatted.replace(/[\s,]/g, "");
   };
@@ -423,10 +436,12 @@ export function InputResultsPanel({
 
   // Determine if we should show the secondary (signed/C2) result
   const isDecimalToBinary = fromBase === "decimal" && toBase === "binary";
+  const isDecimalToHex = fromBase === "decimal" && toBase === "hexadecimal";
   const isBinaryToDecimal = fromBase === "binary" && toBase === "decimal";
   const showSecondaryResult =
     (isDecimalToBinary && getInputSign(input)) ||
-    (isBinaryToDecimal && !getInputSign(input));
+    (isBinaryToDecimal && !getInputSign(input)) ||
+    isDecimalToHex; // always show C2 for decimal→hex
 
   return (
     <Card>
@@ -476,6 +491,8 @@ export function InputResultsPanel({
                       ? getInputSign(input)
                         ? `Decimal`
                         : `Decimal sin signo`
+                      : isDecimalToHex
+                      ? `Hexadecimal`
                       : `Binario sin signo (${getUnsignedBitSpanLabel()})`
                     : "Resultado"}
                 </Label>
@@ -551,6 +568,8 @@ export function InputResultsPanel({
                 <Label className="text-sm font-medium">
                   {isBinaryToDecimal
                     ? `Decimal con complemento a 2`
+                    : isDecimalToHex
+                    ? `Hexadecimal con complemento a 2`
                     : `Complemento a 2 (${getSignedBitSpanLabel()})`}
                 </Label>
                 <div className="font-mono bg-muted/30 border border-input rounded-md px-3 py-2 text-sm">
@@ -560,9 +579,17 @@ export function InputResultsPanel({
                         ? result.signedResult || result.output || ""
                         : isBinaryInput(input) && toBase === "decimal"
                         ? result.signedResult || result.output || ""
+                        : fromBase === "decimal" && toBase === "hexadecimal"
+                        ? result.twosComplementHex || result.output || ""
                         : result.output || ""
                     }
-                    base={isBinaryToDecimal ? "decimal" : "binary"}
+                    base={
+                      isBinaryToDecimal
+                        ? "decimal"
+                        : isDecimalToHex
+                        ? "hexadecimal"
+                        : "binary"
+                    }
                   />
                 </div>
               </div>
@@ -609,6 +636,52 @@ export function InputResultsPanel({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+          )}
+
+          {/* Endianness tables for decimal→hexadecimal C2 */}
+          {result && isDecimalToHex && result.twosComplementHex && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {(() => {
+                const hex = (result.twosComplementHex || "").toUpperCase();
+                const bytes = hex.match(/.{1,2}/g) || [];
+                let start = 0;
+                while (start < bytes.length - 1 && bytes[start] === "00") start++;
+                const trimmed = bytes.slice(start);
+                const big = trimmed;
+                const little = [...trimmed].reverse();
+                const Table = ({ title, arr }: { title: string; arr: string[] }) => (
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">{title}</div>
+                    <table className="w-full border text-xs">
+                      <thead>
+                        <tr className="bg-muted/50">
+                          {arr.map((_, idx) => (
+                            <th key={idx} className="px-2 py-1 border">
+                              {idx}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {arr.map((b, idx) => (
+                            <td key={idx} className="px-2 py-1 border text-center font-mono">
+                              {b}
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                );
+                return (
+                  <>
+                    <Table title="Little endian" arr={little} />
+                    <Table title="Big endian" arr={big} />
+                  </>
+                );
+              })()}
             </div>
           )}
 

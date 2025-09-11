@@ -369,69 +369,38 @@ export function decimalToHexadecimal(
   const decimalValue = isBigNumber ? bigDecimal.abs() : Math.abs(decimal);
 
   // For large numbers, we need to ensure consistent bit width for both positive and negative
-  const shouldUseLargeFormat =
-    !hasFractionalPart &&
-    (isBigNumber ||
-      (typeof decimal === "number" && Math.abs(decimal) > 0x7fffffff));
+  const shouldUseLargeFormat = !hasFractionalPart;
 
-  if (shouldUseLargeFormat) {
-    // Determine the appropriate bit width based on the number size
-    const binaryLength = isBigNumber
+  // Do NOT compute or expose two's complement for positive inputs.
+  // Only handle signed/two's complement when the original input is negative.
+  if (shouldUseLargeFormat && isNegative) {
+    // Prefer at least 64-bit for C2 view; scale up if needed
+    const binaryLengthNeg = isBigNumber
       ? bigDecimal.toString(2).length
       : decimalValue.toString(2).length;
-    let bitWidth;
+    const nextMultipleOf = (n: number, m: number) => Math.ceil(n / m) * m;
+    const bitWidth = Math.max(64, nextMultipleOf(binaryLengthNeg + 1, 8));
 
-    if (binaryLength <= 32) {
-      bitWidth = 32; // 4 bytes
-    } else if (binaryLength <= 48) {
-      bitWidth = 48; // 6 bytes
-    } else {
-      bitWidth = 64; // 8 bytes - use 64-bit for larger numbers
-    }
-
-    // For large numbers, pad to the calculated bit width for consistency
-    if (!isNegative) {
-      signedResult = isBigNumber
-        ? bigDecimal
-            .toString(16)
-            .toUpperCase()
-            .padStart(bitWidth / 4, "0")
-        : decimalValue
-            .toString(16)
-            .toUpperCase()
-            .padStart(bitWidth / 4, "0");
-    }
-  }
-
-  if (isNegative && magnitude !== "0") {
     // Main result is direct hex with negative sign
     signedResult = "-" + magnitude;
 
-    // Calculate two's complement separately for integer values only
-    if (!hasFractionalPart) {
-      const binaryLength = decimalValue.toString(2).length;
-      let bitWidth;
-
-      if (binaryLength <= 32) {
-        bitWidth = 32; // 4 bytes
-      } else if (binaryLength <= 48) {
-        bitWidth = 48; // 6 bytes
-      } else {
-        bitWidth = 64; // 8 bytes - use 64-bit for larger numbers
-      }
-
-      // For negative integers, calculate two's complement: 2^bitWidth - |value|
-      const maxValue = BigInt(1) << BigInt(bitWidth);
-      const bigIntValue = isBigNumber
-        ? BigInt((decimalValue as BigNumber).toString())
-        : BigInt(decimalValue as number);
-      const twosComplementValue = maxValue - bigIntValue;
-      twosComplementHex = twosComplementValue
-        .toString(16)
-        .toUpperCase()
-        .padStart(bitWidth / 4, "0");
-    }
+    // Calculate two's complement for negative integers: 2^bitWidth - |value|
+    const maxValue = BigInt(1) << BigInt(bitWidth);
+    const bigIntValue = isBigNumber
+      ? BigInt((decimalValue as BigNumber).toString())
+      : BigInt(decimalValue as number);
+    const twosComplementValue = maxValue - bigIntValue;
+    twosComplementHex = twosComplementValue
+      .toString(16)
+      .toUpperCase()
+      .padStart(bitWidth / 4, "0");
   }
+
+  // Ensure direct signed result reflects a leading '-' for negatives
+  if (isNegative && magnitude !== "0") {
+    signedResult = "-" + magnitude;
+  }
+
 
   return {
     input: decimal.toString(),

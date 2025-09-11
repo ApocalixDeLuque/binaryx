@@ -7,9 +7,13 @@ import { FormattedNumber } from "@/components/formatted-number";
 
 interface SummaryProps {
   result: ConversionResult;
+  viewMode: "unsigned" | "signed";
 }
 
-export function DecimalToHexadecimalSummary({ result }: SummaryProps) {
+export function DecimalToHexadecimalSummary({ result, viewMode }: SummaryProps) {
+  const isNeg = result.input.trim().startsWith("-");
+  const unsigned = `${isNeg ? "-" : ""}${result.magnitude || result.output}`;
+  const signed = result.twosComplementHex || result.output;
   return (
     <Section title="Resumen">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -23,7 +27,10 @@ export function DecimalToHexadecimalSummary({ result }: SummaryProps) {
         <div>
           <div className="text-sm text-muted-foreground">Resultado</div>
           <div className="font-mono text-sm break-all whitespace-pre-wrap">
-            <FormattedNumber value={result.output} base="hexadecimal" />
+            <FormattedNumber
+              value={viewMode === "unsigned" ? unsigned : signed}
+              base="hexadecimal"
+            />
           </div>
           <div className="text-xs text-muted-foreground">Base Hexadecimal</div>
         </div>

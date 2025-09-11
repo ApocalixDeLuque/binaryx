@@ -40,6 +40,9 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
   const initialFractionalValue = fracSteps.length
     ? Number(fracSteps[0].value).toFixed(4)
     : undefined;
+  const showFrac = fracSteps.length > 0;
+  const showUnion = Boolean(fractionalDigitsFromTable);
+  const applyNegStepNum = 1 + (showFrac ? 1 : 0) + (showUnion ? 1 : 0) + 1;
 
   return (
     <Section title="Conversión Decimal → Octal">
@@ -146,9 +149,7 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
 
       {explicitNegative && (
         <div className="mt-2 text-xs">
-          <div className="text-sm text-muted-foreground mb-2">
-            4) Aplicar signo negativo:
-          </div>
+          <div className="text-sm text-muted-foreground mb-2">{`${applyNegStepNum}) Aplicar signo negativo:`}</div>
           <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
             -
             {fractionalDigitsFromTable

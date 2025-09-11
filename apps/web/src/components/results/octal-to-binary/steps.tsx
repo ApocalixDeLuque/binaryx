@@ -22,6 +22,9 @@ export function OctalToBinarySteps({ result }: StepsProps) {
   // Recap values (use magnitude so fractional matches final truncation/trim)
   const magnitude = result.magnitude || "";
   const [magInt = "", magFrac = ""] = magnitude.split(".");
+  const showFrac = fracPairs.length > 0 || Boolean(magFrac);
+  const showUnion = Boolean(magFrac);
+  const applyNegStepNum = 1 + (showFrac ? 1 : 0) + (showUnion ? 1 : 0) + 1;
 
   return (
     <Section title="Conversión Octal → Binario">
@@ -109,9 +112,7 @@ export function OctalToBinarySteps({ result }: StepsProps) {
 
       {explicitNegative && (
         <div className="mt-2 text-xs">
-          <div className="text-sm text-muted-foreground mb-2">
-            4) Aplicar signo negativo:
-          </div>
+          <div className="text-sm text-muted-foreground mb-2">{`${applyNegStepNum}) Aplicar signo negativo:`}</div>
           <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
             -{magnitude}
           </code>

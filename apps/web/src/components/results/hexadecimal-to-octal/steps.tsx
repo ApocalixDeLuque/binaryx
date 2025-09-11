@@ -45,6 +45,8 @@ export function HexadecimalToOctalSteps({ result }: StepsProps) {
 
   const octIntDigits = (octInt || "0").split("");
   const octFracDigits = (octFrac || "").split("");
+  const showFrac = fracPairs.length > 0;
+  const applyNegStepNum = showFrac ? 6 : 3;
 
   return (
     <Section title="Conversión Hexadecimal → Octal (vía binario)">
@@ -199,9 +201,7 @@ export function HexadecimalToOctalSteps({ result }: StepsProps) {
 
       {explicitNegative && (
         <div className="mt-2 text-xs">
-          <div className="text-sm text-muted-foreground mb-2">
-            6) Aplicar signo negativo:
-          </div>
+          <div className="text-sm text-muted-foreground mb-2">{`${applyNegStepNum}) Aplicar signo negativo:`}</div>
           <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
             -{magnitude}
           </code>

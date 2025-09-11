@@ -225,9 +225,14 @@ export function DecimalToBinarySteps({ result, viewMode }: StepsProps) {
       {/* If negative and unsigned view, show applying the negative sign */}
       {isNegative && viewMode === "unsigned" && (
         <div className="mt-2 text-xs">
-          <div className="text-sm text-muted-foreground mb-2">
-            4) Aplicar signo negativo:
-          </div>
+          {(() => {
+            const showFrac = fractionalBitsFromTable.length > 0;
+            const showUnion = Boolean(fractionalBitsFromTable);
+            const applyNegStepNum = 1 + (showFrac ? 1 : 0) + (showUnion ? 1 : 0) + 1;
+            return (
+              <div className="text-sm text-muted-foreground mb-2">{`${applyNegStepNum}) Aplicar signo negativo:`}</div>
+            );
+          })()}
           <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
             -
             {fractionalBitsFromTable
