@@ -122,7 +122,7 @@ export function ConversionPanel() {
 
       if (hasManualNegative) {
         setManualNegativeWarning(
-          "ADVERTENCIA: La entrada ya tiene signo negativo explícito. Se interpretará como binario sin signo y los cálculos de complemento a dos no se aplicarán."
+          "La entrada ya tiene signo negativo explícito. Se interpretará como binario sin signo y los cálculos de complemento a dos no se aplicarán."
         );
       } else {
         setManualNegativeWarning("");

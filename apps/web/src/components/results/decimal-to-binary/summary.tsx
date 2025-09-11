@@ -29,7 +29,7 @@ export function DecimalToBinarySummary({ result, viewMode }: SummaryProps) {
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Resultado</div>
-          <div className="font-mono text-sm">
+          <div className="font-mono text-sm break-all whitespace-pre-wrap">
             <FormattedNumber
               value={viewMode === "unsigned" ? unsigned : signed}
               base="binary"

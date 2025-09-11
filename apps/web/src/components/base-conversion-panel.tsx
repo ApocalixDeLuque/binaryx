@@ -593,7 +593,7 @@ export function BaseConversionPanel({
                       <div className="text-muted-foreground">
                         Resultado de la tabla (antes del complemento):
                       </div>
-                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                         {result.integerSteps
                           ?.map((step) => step.remainder)
                           .reverse()
@@ -606,7 +606,7 @@ export function BaseConversionPanel({
                       <div className="text-muted-foreground">
                         Acomodo con formato requerido:
                       </div>
-                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                         {formatDisplayValue(
                           result.magnitude ||
                             result.integerSteps
@@ -1940,7 +1940,7 @@ export function BaseConversionPanel({
                     </div>
                     <div className="mt-3 text-xs">
                       <div className="text-muted-foreground">Resultado:</div>
-                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                         {result.input} = {result.input.split("").join(" ")} ={" "}
                         {result.output}
                       </code>
@@ -2329,7 +2329,7 @@ export function BaseConversionPanel({
                     </div>
                     <div className="mt-3 text-xs">
                       <div className="text-muted-foreground">Resultado:</div>
-                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                      <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                         {result.input} → binario → {result.output}
                       </code>
                     </div>
@@ -2614,7 +2614,7 @@ export function BaseConversionPanel({
                         <div className="text-muted-foreground">
                           Resultado (de abajo hacia arriba):
                         </div>
-                        <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                           {intBinaryMagnitude}
                         </code>
                       </div>
@@ -2668,7 +2668,7 @@ export function BaseConversionPanel({
                         <div className="text-muted-foreground">
                           Resultado (de arriba hacia abajo):
                         </div>
-                        <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                           {fracBitsSeq}
                         </code>
                       </div>

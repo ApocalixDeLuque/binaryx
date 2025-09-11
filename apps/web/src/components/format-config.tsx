@@ -74,7 +74,9 @@ export function FormatConfigComponent({
               bits)
             </div>
           </div>
-          <div className="font-mono text-sm">{format.name}</div>
+          <div className="font-mono text-sm break-all whitespace-pre-wrap">
+            {format.name}
+          </div>
         </div>
         <div className="mt-2 text-xs text-muted-foreground">
           Rango: ±{getMaxValue(format).toFixed(format.fractionalBits)}

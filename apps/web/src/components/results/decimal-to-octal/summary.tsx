@@ -22,7 +22,7 @@ export function DecimalToOctalSummary({ result }: SummaryProps) {
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Resultado</div>
-          <div className="font-mono text-sm">
+          <div className="font-mono text-sm break-all whitespace-pre-wrap">
             <FormattedNumber value={result.output} base="octal" />
           </div>
           <div className="text-xs text-muted-foreground">Base Octal</div>

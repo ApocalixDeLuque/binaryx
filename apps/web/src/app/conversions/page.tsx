@@ -565,7 +565,9 @@ export default function ConversionsPage() {
                       onClick={() => loadExample(example)}
                     >
                       <div>
-                        <div className="font-mono text-sm">{example.input}</div>
+                        <div className="font-mono text-sm break-all whitespace-pre-wrap">
+                          {example.input}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {example.description}
                         </div>

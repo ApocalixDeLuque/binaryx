@@ -121,65 +121,78 @@ export function InputResultsPanel({
     const cleanValue = value.replace(/[\s,]/g, "");
 
     switch (base) {
-      case "binary":
-        if (!cleanValue || cleanValue === "0") {
-          return cleanValue;
-        }
-        // Group binary digits in 4-bit groups from right to left
-        const groups: string[] = [];
-        let remaining = cleanValue;
+      case "binary": {
+        if (!cleanValue) return cleanValue;
+        const isNeg = cleanValue.startsWith("-");
+        const unsigned = isNeg ? cleanValue.slice(1) : cleanValue;
+        const [i = "", f = ""] = unsigned.split(".");
+        const groupInt = (s: string, size: number) => {
+          const out: string[] = [];
+          let rem = s;
+          while (rem.length > size) {
+            out.unshift(rem.slice(-size));
+            rem = rem.slice(0, -size);
+          }
+          if (rem.length) out.unshift(rem);
+          return out.join(" ");
+        };
+        const groupFrac = (s: string, size: number) => {
+          const out: string[] = [];
+          for (let k = 0; k < s.length; k += size) out.push(s.slice(k, k + size));
+          return out.join(" ");
+        };
+        if (!f) return `${isNeg ? "-" : ""}${groupInt(i, 4)}`;
+        return `${isNeg ? "-" : ""}${groupInt(i, 4)}.${groupFrac(f, 4)}`;
+      }
 
-        while (remaining.length > 4) {
-          const group = remaining.slice(-4);
-          groups.unshift(group);
-          remaining = remaining.slice(0, -4);
-        }
+      case "octal": {
+        if (!cleanValue) return cleanValue;
+        const isNeg = cleanValue.startsWith("-");
+        const unsigned = isNeg ? cleanValue.slice(1) : cleanValue;
+        const [i = "", f = ""] = unsigned.split(".");
+        const groupInt = (s: string, size: number) => {
+          const out: string[] = [];
+          let rem = s;
+          while (rem.length > size) {
+            out.unshift(rem.slice(-size));
+            rem = rem.slice(0, -size);
+          }
+          if (rem.length) out.unshift(rem);
+          return out.join(" ");
+        };
+        const groupFrac = (s: string, size: number) => {
+          const out: string[] = [];
+          for (let k = 0; k < s.length; k += size) out.push(s.slice(k, k + size));
+          return out.join(" ");
+        };
+        if (!f) return `${isNeg ? "-" : ""}${groupInt(i, 3)}`;
+        return `${isNeg ? "-" : ""}${groupInt(i, 3)}.${groupFrac(f, 3)}`;
+      }
 
-        if (remaining.length > 0) {
-          groups.unshift(remaining);
-        }
-
-        return groups.join(" ");
-
-      case "octal":
-        if (!cleanValue || cleanValue === "0") {
-          return cleanValue;
-        }
-        // Group octal digits in 3-digit groups from right to left
-        const octalGroups: string[] = [];
-        let octalRemaining = cleanValue;
-
-        while (octalRemaining.length > 3) {
-          const group = octalRemaining.slice(-3);
-          octalGroups.unshift(group);
-          octalRemaining = octalRemaining.slice(0, -3);
-        }
-
-        if (octalRemaining.length > 0) {
-          octalGroups.unshift(octalRemaining);
-        }
-
-        return octalGroups.join(" ");
-
-      case "hexadecimal":
-        if (!cleanValue || cleanValue === "0") {
-          return cleanValue;
-        }
-        // Group hexadecimal digits in 4-digit groups from right to left
-        const hexGroups: string[] = [];
-        let hexRemaining = cleanValue;
-
-        while (hexRemaining.length > 4) {
-          const group = hexRemaining.slice(-4);
-          hexGroups.unshift(group);
-          hexRemaining = hexRemaining.slice(0, -4);
-        }
-
-        if (hexRemaining.length > 0) {
-          hexGroups.unshift(hexRemaining);
-        }
-
-        return hexGroups.join(" ");
+      case "hexadecimal": {
+        if (!cleanValue) return cleanValue;
+        const isNeg = cleanValue.startsWith("-");
+        const unsigned = isNeg ? cleanValue.slice(1) : cleanValue;
+        const [i = "", f = ""] = unsigned.split(".");
+        const groupInt = (s: string, size: number) => {
+          const out: string[] = [];
+          let rem = s;
+          while (rem.length > size) {
+            out.unshift(rem.slice(-size));
+            rem = rem.slice(0, -size);
+          }
+          if (rem.length) out.unshift(rem);
+          return out.join(" ");
+        };
+        const groupFrac = (s: string, size: number) => {
+          const out: string[] = [];
+          for (let k = 0; k < s.length; k += size) out.push(s.slice(k, k + size));
+          return out.join(" ");
+        };
+        // Match FormattedNumber display: hex groups of 2
+        if (!f) return `${isNeg ? "-" : ""}${groupInt(i, 2)}`;
+        return `${isNeg ? "-" : ""}${groupInt(i, 2)}.${groupFrac(f, 2)}`;
+      }
 
       case "decimal":
         if (!cleanValue) {

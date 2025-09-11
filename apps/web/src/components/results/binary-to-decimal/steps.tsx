@@ -14,6 +14,17 @@ export function BinaryToDecimalSteps({ result, viewMode }: StepsProps) {
     result.magnitude || result.input.replace(/\s/g, "").replace(/^-/, "");
   const [rawIntPart = "", rawFracPart = ""] = clean.split(".");
   const explicitNegative = result.input.trim().startsWith("-");
+  // Dynamic step numbering
+  const hasFraction = rawFracPart.length > 0;
+  const hasC2Block = viewMode === "signed" && !explicitNegative;
+  const intStepNum = hasC2Block ? 2 : 1;
+  const fracStepNum = intStepNum + 1;
+  const unionStepNum = hasFraction ? intStepNum + 2 : intStepNum + 1;
+  const applyNegStepNum = unionStepNum + 1;
+  // Use final output to display precise fractional and union values
+  const outClean = (result.output || "").replace(/[\s,]/g, "");
+  const outUnsigned = outClean.startsWith("-") ? outClean.slice(1) : outClean;
+  const [outIntStr = "", outFracStr = ""] = outUnsigned.split(".");
 
   // For signed view (without explicit '-'), undo two's complement to obtain magnitude bits
   let intPart = rawIntPart;
@@ -76,9 +87,26 @@ export function BinaryToDecimalSteps({ result, viewMode }: StepsProps) {
     power: -(idx + 1),
     contrib: Number(bit) * Math.pow(2, -(idx + 1)),
   }));
+  // Formatter: if |value| < 1e-12, use scientific notation; otherwise show up to 10 decimals
+  const formatContribution = (v: number): string => {
+    if (v === 0) return "0";
+    const abs = Math.abs(v);
+    if (abs < 1e-12) return v.toExponential(3);
+    const s = v.toFixed(10);
+    return s;
+  };
 
   const intSum = intRows.reduce((s, r) => s + r.contrib, 0);
   const fracSum = fracRows.reduce((s, r) => s + r.contrib, 0);
+  const intSumExpr = intRows
+    .map((r) => r.contrib)
+    .filter((v) => v !== 0)
+    .join(" + ");
+  const fracSumExpr = fracRows
+    .map((r) => r.contrib)
+    .filter((v) => v !== 0)
+    .map(formatContribution)
+    .join(" + ");
   const union = intSum + fracSum;
   const intBitLen = intPart.length;
   const signedUnion = intPart.startsWith("1")
@@ -89,38 +117,36 @@ export function BinaryToDecimalSteps({ result, viewMode }: StepsProps) {
     <Section title="Desglose Binario → Decimal">
       {viewMode === "signed" && !explicitNegative && (
         <div className="text-xs mb-3 space-y-1">
-          <div className="text-sm font-medium">
-            Proceso para magnitud (deshacer C2)
+          <div className="text-sm text-muted-foreground mb-2">
+            1) Proceso para magnitud (deshacer C2)
           </div>
           <div>
             1) Original (C2):
-            <code className="ml-2 font-mono border rounded px-2 py-1 inline-block">
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap max-w-full break-words">
               {c2Original}
             </code>
           </div>
           <div>
             2) Invertir bits (C1):
-            <code className="ml-2 font-mono border rounded px-2 py-1 inline-block">
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap max-w-full break-words">
               {c1Inverted}
             </code>
           </div>
           <div>
             3) Sumar 1:
-            <code className="ml-2 font-mono border rounded px-2 py-1 inline-block">
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap max-w-full break-words">
               {plusOne}
             </code>
           </div>
           <div>
             4) Magnitud obtenida:
-            <code className="ml-2 font-mono border rounded px-2 py-1 inline-block">
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap max-w-full break-words">
               {magnitudeBits}
             </code>
           </div>
         </div>
       )}
-      <div className="text-sm text-muted-foreground mb-2">
-        Parte entera: bit × 2^n
-      </div>
+      <div className="text-sm text-muted-foreground mb-2">{`${intStepNum}) Parte entera (bit × 2^n):`}</div>
       <div className="overflow-x-auto">
         <table className="w-full border text-xs">
           <thead>
@@ -147,18 +173,25 @@ export function BinaryToDecimalSteps({ result, viewMode }: StepsProps) {
           </tbody>
         </table>
       </div>
+      {/* Explicit step: sum contributions (integer) */}
+      <div className="mt-3 text-xs">
+        <div className="text-muted-foreground">
+          Suma de contribuciones (parte entera):
+        </div>
+        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+          {intSumExpr || "0"}
+        </code>
+      </div>
       <div className="mt-3 text-xs">
         <div className="text-muted-foreground">Parte entera obtenida:</div>
-        <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
-          {intSum}
+        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+          {outIntStr || intSum}
         </code>
       </div>
 
       {fracRows.length > 0 && (
         <div className="mt-4">
-          <div className="text-sm text-muted-foreground mb-2">
-            Parte fraccionaria: bit × 2^-n
-          </div>
+          <div className="text-sm text-muted-foreground mb-2">{`${fracStepNum}) Parte fraccionaria (bit × 2^-n):`}</div>
           <div className="overflow-x-auto">
             <table className="w-full border text-xs">
               <thead>
@@ -177,44 +210,51 @@ export function BinaryToDecimalSteps({ result, viewMode }: StepsProps) {
                     <td className="px-2 py-1 border text-center font-mono">
                       2^{r.power}
                     </td>
-                    <td className="px-2 py-1 border text-center font-mono">
-                      {r.contrib.toFixed(10)}
-                    </td>
+                    <td className="px-2 py-1 border text-center font-mono">{formatContribution(r.contrib)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {/* Explicit step: sum contributions (fractional) */}
+          <div className="mt-3 text-xs">
+            <div className="text-muted-foreground">
+              Suma de contribuciones (parte fraccionaria):
+            </div>
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+              {fracSumExpr || "0"}
+            </code>
+          </div>
           <div className="mt-3 text-xs">
             <div className="text-muted-foreground">
               Parte fraccionaria obtenida:
             </div>
-            <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
-              {fracSum}
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+              {outFracStr ? `0.${outFracStr}` : fracSum}
             </code>
           </div>
         </div>
       )}
 
       <div className="mt-4 text-xs">
-        <div className="text-muted-foreground">Unión de partes:</div>
-        <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
-          {union}
+        <div className="text-sm text-muted-foreground mb-2">{`${unionStepNum}) Unión de partes:`}</div>
+        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+          {outUnsigned || union}
         </code>
       </div>
       {viewMode === "signed" && !explicitNegative && (
         <div className="mt-2 text-xs">
-          <div className="text-muted-foreground">Aplicar signo negativo:</div>
-          <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
-            -{union}
+          <div className="text-sm text-muted-foreground mb-2">{`${applyNegStepNum}) Aplicar signo negativo:`}</div>
+          <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+            -{outUnsigned || union}
           </code>
         </div>
       )}
       {explicitNegative && (
         <div className="mt-2 text-xs">
-          <div className="text-muted-foreground">Aplicar signo negativo:</div>
-          <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
-            -{union}
+          <div className="text-sm text-muted-foreground mb-2">{`${applyNegStepNum}) Aplicar signo negativo:`}</div>
+          <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+            -{outUnsigned || union}
           </code>
         </div>
       )}

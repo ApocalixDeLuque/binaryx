@@ -43,7 +43,9 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
 
   return (
     <Section title="Conversión Decimal → Octal">
-      <div className="text-sm text-muted-foreground mb-2">Parte entera:</div>
+      <div className="text-sm text-muted-foreground mb-2">
+        1) Parte entera (÷8):
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full border text-xs">
           <thead>
@@ -80,7 +82,7 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
       {/* Recap: integer digits from table */}
       <div className="mt-3 text-xs">
         <div className="text-muted-foreground">Parte entera obtenida:</div>
-        <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
           {integerDigitsFromTable}
         </code>
       </div>
@@ -88,7 +90,7 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
       {fracSteps.length > 0 && (
         <div className="mt-4">
           <div className="text-sm text-muted-foreground mb-2">
-            Parte fraccionaria:
+            2) Parte fraccionaria (×8):
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border text-xs">
@@ -123,7 +125,7 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
             <div className="text-muted-foreground">
               Parte fraccionaria obtenida:
             </div>
-            <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
               {fractionalDigitsFromTable || "0"}
             </code>
           </div>
@@ -133,8 +135,10 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
       {/* Recap: union of integer and fractional parts */}
       {fractionalDigitsFromTable && (
         <div className="mt-4 text-xs">
-          <div className="text-muted-foreground">Unión de partes:</div>
-          <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+          <div className="text-sm text-muted-foreground mb-2">
+            3) Unión de partes:
+          </div>
+          <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
             {combinedFromTables}
           </code>
         </div>
@@ -142,8 +146,10 @@ export function DecimalToOctalSteps({ result }: StepsProps) {
 
       {explicitNegative && (
         <div className="mt-2 text-xs">
-          <div className="text-muted-foreground">Aplicar signo negativo:</div>
-          <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+          <div className="text-sm text-muted-foreground mb-2">
+            4) Aplicar signo negativo:
+          </div>
+          <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
             -
             {fractionalDigitsFromTable
               ? combinedFromTables

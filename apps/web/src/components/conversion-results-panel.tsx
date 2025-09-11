@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ConversionResult, BaseType } from "@/lib/base-conversions";
 import { BinaryToOctalResults } from "@/components/results/binary-to-octal";
-import { OctalToBinaryConversion } from "./conversions/octal-to-binary";
+import { OctalToBinaryResults } from "@/components/results/octal-to-binary";
+import { OctalToHexadecimalResults } from "@/components/results/octal-to-hexadecimal";
 import { BinaryToHexadecimalResults } from "@/components/results/binary-to-hexadecimal";
 import { HexadecimalToBinaryResults } from "@/components/results/hexadecimal-to-binary";
 import { HexadecimalToDecimalResults } from "@/components/results/hexadecimal-to-decimal";
@@ -12,6 +13,7 @@ import { DecimalToBinaryResults } from "@/components/results/decimal-to-binary";
 import { BinaryToDecimalResults } from "@/components/results/binary-to-decimal";
 import { DecimalToOctalResults } from "@/components/results/decimal-to-octal";
 import { DecimalToHexadecimalResults } from "@/components/results/decimal-to-hexadecimal";
+import { OctalToDecimalResults } from "@/components/results/octal-to-decimal";
 import React from "react";
 import { ResultSelector } from "./results/base/selector";
 
@@ -184,7 +186,15 @@ export function ConversionResultsPanel({
         )}
 
         {result.inputBase === "octal" && result.outputBase === "binary" && (
-          <OctalToBinaryConversion result={result} />
+          <OctalToBinaryResults result={result} />
+        )}
+
+        {result.inputBase === "octal" && result.outputBase === "hexadecimal" && (
+          <OctalToHexadecimalResults result={result} />
+        )}
+
+        {result.inputBase === "octal" && result.outputBase === "decimal" && (
+          <OctalToDecimalResults result={result} />
         )}
 
         {result.inputBase === "binary" &&

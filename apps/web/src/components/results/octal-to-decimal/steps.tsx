@@ -8,7 +8,7 @@ interface StepsProps {
   result: ConversionResult;
 }
 
-export function HexadecimalToDecimalSteps({ result }: StepsProps) {
+export function OctalToDecimalSteps({ result }: StepsProps) {
   const explicitNegative = result.input.trim().startsWith("-");
 
   const clean = result.input.replace(/\s/g, "").replace(/^-/, "");
@@ -19,24 +19,31 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
   const outUnsigned = outClean.startsWith("-") ? outClean.slice(1) : outClean;
   const [outIntStr = "", outFracStr = ""] = outUnsigned.split(".");
 
-  // Build integer positional contributions (digit * 16^position)
+  // Build integer positional contributions (digit * 8^position)
   const intRows = intRaw
     .split("")
     .reverse()
     .map((ch, idx) => ({
-      ch: ch.toUpperCase(),
+      ch,
       power: idx,
-      contrib: parseInt(ch, 16) * Math.pow(16, idx),
+      contrib: parseInt(ch || "0", 8) * Math.pow(8, idx),
     }))
     .reverse();
 
-  // Build fractional positional contributions (digit * 16^-position)
+  // Build fractional positional contributions (digit * 8^-position)
   const fracRows = fracRaw.split("").map((ch, idx) => ({
-    ch: ch.toUpperCase(),
+    ch,
     power: -(idx + 1),
-    contrib: parseInt(ch, 16) * Math.pow(16, -(idx + 1)),
+    contrib: parseInt(ch || "0", 8) * Math.pow(8, -(idx + 1)),
   }));
-  // Formatter for tiny contributions: scientific notation if |v| < 1e-12
+
+  const intSum = intRows.reduce((s, r) => s + r.contrib, 0);
+  const fracSum = fracRows.reduce((s, r) => s + r.contrib, 0);
+  // Build human-readable sum expressions (omit zero contributions)
+  const intSumExpr = intRows
+    .map((r) => r.contrib)
+    .filter((v) => v !== 0)
+    .join(" + ");
   const formatContribution = (v: number): string => {
     if (v === 0) return "0";
     const abs = Math.abs(v);
@@ -44,25 +51,25 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
     const s = v.toFixed(12).replace(/0+$/g, "").replace(/\.$/, "");
     return s || "0";
   };
-
-  const intSum = intRows.reduce((s, r) => s + r.contrib, 0);
-  const fracSum = fracRows.reduce((s, r) => s + r.contrib, 0);
-  const intSumExpr = intRows
+  const fracSumExpr = fracRows
     .map((r) => r.contrib)
     .filter((v) => v !== 0)
+    .map(formatContribution)
     .join(" + ");
-  const union = intSum + fracSum;
+  // Display values derived from precise final output
+  const fracSumDisplay = outFracStr ? `0.${outFracStr}` : "0";
+  const unionDisplay = outUnsigned || (intSum + fracSum).toString();
 
   return (
-    <Section title="Desglose Hexadecimal → Decimal">
+    <Section title="Desglose Octal → Decimal">
       <div className="text-sm text-muted-foreground mb-2">
-        1) Parte entera (dígito × 16^n):
+        1) Parte entera (dígito × 8^n):
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border text-xs">
           <thead>
             <tr className="bg-muted/50">
-              <th className="px-2 py-1 border">Hex</th>
+              <th className="px-2 py-1 border">Octal</th>
               <th className="px-2 py-1 border">Potencia</th>
               <th className="px-2 py-1 border">Contribución</th>
             </tr>
@@ -74,7 +81,7 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
                   {r.ch}
                 </td>
                 <td className="px-2 py-1 border text-center font-mono">
-                  16^{r.power}
+                  8^{r.power}
                 </td>
                 <td className="px-2 py-1 border text-center font-mono">
                   {r.contrib}
@@ -103,13 +110,13 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
       {fracRows.length > 0 && (
         <div className="mt-4">
           <div className="text-sm text-muted-foreground mb-2">
-            2) Parte fraccionaria (dígito × 16^-n):
+            2) Parte fraccionaria (dígito × 8^-n):
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border text-xs">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="px-2 py-1 border">Hex</th>
+                  <th className="px-2 py-1 border">Octal</th>
                   <th className="px-2 py-1 border">Potencia</th>
                   <th className="px-2 py-1 border">Contribución</th>
                 </tr>
@@ -121,7 +128,7 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
                       {r.ch}
                     </td>
                     <td className="px-2 py-1 border text-center font-mono">
-                      16^{r.power}
+                      8^{r.power}
                     </td>
                     <td className="px-2 py-1 border text-center font-mono">
                       {formatContribution(r.contrib)}
@@ -131,12 +138,21 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
               </tbody>
             </table>
           </div>
+          {/* Explicit step: sum contributions (fractional) */}
+          <div className="mt-3 text-xs">
+            <div className="text-muted-foreground">
+              Suma de contribuciones (parte fraccionaria):
+            </div>
+            <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+              {fracSumExpr || "0"}
+            </code>
+          </div>
           <div className="mt-3 text-xs">
             <div className="text-muted-foreground">
               Parte fraccionaria obtenida:
             </div>
             <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
-              {outFracStr ? `0.${outFracStr}` : "0"}
+              {fracSumDisplay}
             </code>
           </div>
         </div>
@@ -146,8 +162,8 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
         <div className="text-sm text-muted-foreground mb-2">
           3) Unión de partes:
         </div>
-        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words max-w-full">
-          {outUnsigned || union}
+        <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
+          {unionDisplay}
         </code>
       </div>
       {explicitNegative && (
@@ -156,7 +172,7 @@ export function HexadecimalToDecimalSteps({ result }: StepsProps) {
             4) Aplicar signo negativo:
           </div>
           <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
-            -{outUnsigned || union}
+            -{unionDisplay}
           </code>
         </div>
       )}

@@ -22,7 +22,7 @@ export function BinaryToHexadecimalSummary({ result }: SummaryProps) {
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Resultado</div>
-          <div className="font-mono text-sm">
+          <div className="font-mono text-sm break-all whitespace-pre-wrap">
             <FormattedNumber value={result.output} base="hexadecimal" />
           </div>
           <div className="text-xs text-muted-foreground">Base Hexadecimal</div>
@@ -31,4 +31,3 @@ export function BinaryToHexadecimalSummary({ result }: SummaryProps) {
     </Section>
   );
 }
-

@@ -9,7 +9,7 @@ interface SummaryProps {
   result: ConversionResult;
 }
 
-export function DecimalToHexadecimalSummary({ result }: SummaryProps) {
+export function OctalToDecimalSummary({ result }: SummaryProps) {
   return (
     <Section title="Resumen">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -18,14 +18,14 @@ export function DecimalToHexadecimalSummary({ result }: SummaryProps) {
           <div className="font-mono text-sm break-all whitespace-pre-wrap">
             {result.input}
           </div>
-          <div className="text-xs text-muted-foreground">Base Decimal</div>
+          <div className="text-xs text-muted-foreground">Base Octal</div>
         </div>
         <div>
           <div className="text-sm text-muted-foreground">Resultado</div>
           <div className="font-mono text-sm break-all whitespace-pre-wrap">
-            <FormattedNumber value={result.output} base="hexadecimal" />
+            <FormattedNumber value={result.output} base="decimal" />
           </div>
-          <div className="text-xs text-muted-foreground">Base Hexadecimal</div>
+          <div className="text-xs text-muted-foreground">Base Decimal</div>
         </div>
       </div>
     </Section>

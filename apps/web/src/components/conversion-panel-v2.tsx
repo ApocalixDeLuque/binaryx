@@ -158,13 +158,13 @@ export function ConversionPanelV2({
                     <div className="text-muted-foreground">
                       Resultado (de abajo hacia arriba):
                     </div>
-                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                       {intBinaryMagnitude}
                     </code>
                     <div className="mt-2 text-muted-foreground">
                       Adaptado al formato (entero):
                     </div>
-                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                       {intBinaryPadded.match(/.{1,4}/g)?.join(" ") ||
                         intBinaryPadded}
                     </code>
@@ -219,13 +219,13 @@ export function ConversionPanelV2({
                     <div className="text-muted-foreground">
                       Resultado (de arriba hacia abajo):
                     </div>
-                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                       {fracBitsSeq}
                     </code>
                     <div className="mt-2 text-muted-foreground">
                       Adaptado al formato (fracción):
                     </div>
-                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                    <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                       {fracBinaryPadded.match(/.{1,4}/g)?.join(" ") ||
                         fracBinaryPadded}
                     </code>
@@ -237,7 +237,7 @@ export function ConversionPanelV2({
                 <div className="text-muted-foreground">
                   Combinado (entero + fracción) ajustado al formato:
                 </div>
-                <code className="font-mono border rounded px-2 py-1 inline-block mt-1">
+                <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
                   {intBinaryPadded.match(/.{1,4}/g)?.join(" ") ||
                     intBinaryPadded}
                   {format.fractionalBits > 0 ? " · " : ""}

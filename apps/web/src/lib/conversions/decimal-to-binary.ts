@@ -76,25 +76,31 @@ export function decimalToBinary(
   // Only pad very large numbers if needed for readability
   // (This preserves the natural binary length for small numbers)
 
-  // Fractional part conversion (only for regular numbers, not BigNumbers for now)
+  // Fractional part conversion with BigNumber precision (dynamic length)
   let fractionalResult = "";
-  if (hasFractionalPart && !isBigNumber) {
-    let fractionalPart = absValue.toNumber() - Math.floor(absValue.toNumber());
-    const fractionalBits: string[] = [];
+  if (hasFractionalPart) {
+    const intPartBN = absValue.integerValue(BigNumber.ROUND_DOWN);
+    let fracBN = absValue.minus(intPartBN);
 
-    // Initial fractional step
-    fractionalSteps.push({ value: fractionalPart, bit: -1 }); // Special marker for initial
+    // Record initial fractional value for the table
+    fractionalSteps.push({ value: fracBN.toNumber(), bit: -1 });
 
-    while (fractionalPart > 0 && fractionalBits.length < 8) {
-      fractionalPart *= 2;
-      const bit = Math.floor(fractionalPart);
-      fractionalSteps.push({ value: fractionalPart, bit });
-      fractionalBits.push(bit.toString());
-      fractionalPart -= bit;
+    // Decide a generous cap based on decimal places
+    const dp = (absValue as BigNumber).decimalPlaces?.() ?? 0;
+    const maxBits = Math.max(64, Math.min(1024, Math.ceil(dp * 4)));
+
+    const bits: string[] = [];
+    for (let i = 0; i < maxBits && !fracBN.isZero(); i++) {
+      fracBN = fracBN.times(2);
+      const bitBN = fracBN.integerValue(BigNumber.ROUND_FLOOR);
+      const bit = bitBN.toNumber();
+      fractionalSteps.push({ value: fracBN.toNumber(), bit });
+      bits.push(bit.toString());
+      fracBN = fracBN.minus(bitBN);
     }
 
-    fractionalResult = fractionalBits.join("");
-    magnitude += "." + fractionalResult;
+    fractionalResult = bits.join("");
+    if (fractionalResult) magnitude += "." + fractionalResult;
   }
 
   // Handle signed representation for negative numbers
@@ -109,9 +115,9 @@ export function decimalToBinary(
 
     // Calculate two's complement for signedResult
     if (magnitude.includes(".")) {
-      // Fractional two's complement with fixed 8 fractional bits
-      const [i, f] = magnitude.split(".");
-      const frac = (f || "").padEnd(8, "0").slice(0, 8);
+      // Fractional two's complement with dynamic fractional width
+      const [i, f = ""] = magnitude.split(".");
+      const frac = f;
       const intWidth = i.length + 1; // pad with one extra sign bit
       const paddedInt = i.padStart(intWidth, "0");
 

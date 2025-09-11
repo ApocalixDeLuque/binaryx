@@ -35,13 +35,16 @@ export function binaryToDecimal(
   const useBigInt = binaryWithoutSign.length > 53;
 
   let decimal: number | bigint = 0;
+  let unsignedBN: BigNumber | null = null;
+  let signedBN: BigNumber | null = null;
   const hasFractionalPart = binaryWithoutSign.includes(".");
 
   if (hasFractionalPart) {
-    // Handle fractional binary (use regular numbers for fractional parts)
+    // Handle fractional binary precisely using BigNumber
     const [integerPart, fractionalPart] = binaryWithoutSign.split(".");
 
-    // Convert integer part
+    // Convert integer part contributions (for steps) and accumulate using BigInt first
+    let intBigInt = BigInt(0);
     for (let i = 0; i < integerPart.length; i++) {
       const bit = parseInt(integerPart[integerPart.length - 1 - i]);
       const power = Math.pow(2, i);
@@ -54,34 +57,44 @@ export function binaryToDecimal(
         output: contribution.toString(),
       });
 
-      decimal = (decimal as number) + contribution;
+      intBigInt += BigInt(contribution);
     }
 
-    // Convert fractional part
+    // Convert fractional part using BigNumber
+    let fracBN = new BigNumber(0);
     for (let i = 0; i < fractionalPart.length; i++) {
       const bit = parseInt(fractionalPart[i]);
-      const power = Math.pow(2, -(i + 1));
-      const contribution = bit * power;
-
+      if (bit === 0) {
+        // still add a step for completeness
+        steps.push({
+          step: steps.length + 1,
+          input: fractionalPart[i],
+          operation: `× 2^${-(i + 1)}`,
+          output: "0",
+        });
+        continue;
+      }
+      const denom = new BigNumber(2).exponentiatedBy(i + 1);
+      const contribution = new BigNumber(1).div(denom);
       steps.push({
         step: steps.length + 1,
         input: fractionalPart[i],
         operation: `× 2^${-(i + 1)}`,
         output: contribution.toString(),
       });
-
-      decimal = (decimal as number) + contribution;
+      fracBN = fracBN.plus(contribution);
     }
 
-    // Add fractional steps for table display
+    // Populate fractionalSteps for table (value shows remaining fraction view)
     fractionalSteps.push({ value: parseFloat("0." + fractionalPart), bit: -1 });
     for (let i = 0; i < fractionalPart.length; i++) {
       const bit = parseInt(fractionalPart[i]);
-      fractionalSteps.push({
-        value: parseFloat("0." + fractionalPart.slice(i)),
-        bit,
-      });
+      fractionalSteps.push({ value: parseFloat("0." + fractionalPart.slice(i)), bit });
     }
+
+    const totalBN = new BigNumber(intBigInt.toString()).plus(fracBN);
+    unsignedBN = totalBN;
+    decimal = totalBN.toNumber(); // retain numeric approx for step math only
   } else {
     // Integer only - use BigInt for large numbers
     if (useBigInt) {
@@ -142,27 +155,55 @@ export function binaryToDecimal(
   const unsignedDecimal = decimal;
 
   let signedDecimal: number | bigint;
-  if (isExplicitlyNegative) {
-    signedDecimal = useBigInt
-      ? -(unsignedDecimal as bigint)
-      : -(unsignedDecimal as number);
-  } else {
-    const leadingOne = integerPart.startsWith("1");
-    if (leadingOne) {
-      if (useBigInt) {
-        signedDecimal =
-          (unsignedDecimal as bigint) - (BigInt(1) << BigInt(integerBitLength));
-      } else {
-        signedDecimal =
-          (unsignedDecimal as number) - Math.pow(2, integerBitLength);
-      }
+  if (unsignedBN) {
+    // Fractional present: compute signed with BigNumber to avoid BigInt/number mixing
+    if (isExplicitlyNegative) {
+      signedBN = unsignedBN.negated();
     } else {
-      signedDecimal = unsignedDecimal;
+      const leadingOne = integerPart.startsWith("1");
+      signedBN = leadingOne
+        ? unsignedBN.minus(new BigNumber(2).exponentiatedBy(integerBitLength))
+        : unsignedBN;
+    }
+    signedDecimal = signedBN.toNumber();
+  } else {
+    if (isExplicitlyNegative) {
+      signedDecimal = useBigInt
+        ? -(unsignedDecimal as bigint)
+        : -(unsignedDecimal as number);
+    } else {
+      const leadingOne = integerPart.startsWith("1");
+      if (leadingOne) {
+        if (useBigInt) {
+          signedDecimal =
+            (unsignedDecimal as bigint) - (BigInt(1) << BigInt(integerBitLength));
+        } else {
+          signedDecimal =
+            (unsignedDecimal as number) - Math.pow(2, integerBitLength);
+        }
+      } else {
+        signedDecimal = unsignedDecimal;
+      }
     }
   }
 
-  const finalUnsignedStr = formatDecimalOutput(unsignedDecimal as number);
-  const finalSignedStr = formatDecimalOutput(signedDecimal as number);
+  // For fractional numbers, render with fixed 20 fractional digits for stability
+  const renderDecimal = (val: number | bigint, hasFrac: boolean): string => {
+    if (typeof val === "bigint") return val.toString();
+    if (hasFrac) {
+      const bn = new BigNumber(val);
+      return bn.toFixed(20);
+    }
+    return formatDecimalOutput(val);
+  };
+
+  const finalUnsignedStr = unsignedBN
+    ? unsignedBN.toFixed(20)
+    : renderDecimal(unsignedDecimal, hasFractionalPart);
+  const finalSignedStr = ((): string => {
+    if (signedBN) return signedBN.toFixed(20);
+    return renderDecimal(signedDecimal, hasFractionalPart);
+  })();
   const isNegative =
     typeof signedDecimal === "bigint"
       ? signedDecimal < BigInt(0)

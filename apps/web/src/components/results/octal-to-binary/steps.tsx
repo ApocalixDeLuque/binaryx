@@ -8,55 +8,42 @@ interface StepsProps {
   result: ConversionResult;
 }
 
-export function BinaryToOctalSteps({ result }: StepsProps) {
+export function OctalToBinarySteps({ result }: StepsProps) {
   const explicitNegative = result.input.trim().startsWith("-");
 
   const clean = result.input.replace(/\s/g, "").replace(/^-/, "");
-  const [intRaw = "", fracRaw = ""] = clean.split(".");
+  const [intOct = "", fracOct = ""] = clean.split(".");
 
-  const padLeft = (s: string) =>
-    s.length % 3 === 0 ? s : s.padStart(s.length + (3 - (s.length % 3)), "0");
-  const padRight = (s: string) =>
-    s.length % 3 === 0 ? s : s.padEnd(s.length + (3 - (s.length % 3)), "0");
+  const toBin3 = (ch: string) => parseInt(ch, 8).toString(2).padStart(3, "0");
 
-  const intPadded = padLeft(intRaw || "0");
-  const fracPadded = fracRaw ? padRight(fracRaw) : "";
+  const intPairs = intOct.split("").map((ch) => ({ ch, bin: toBin3(ch) }));
+  const fracPairs = fracOct.split("").map((ch) => ({ ch, bin: toBin3(ch) }));
 
-  const intGroups: string[] = [];
-  for (let i = 0; i < intPadded.length; i += 3)
-    intGroups.push(intPadded.slice(i, i + 3));
-  const fracGroups: string[] = [];
-  for (let i = 0; i < fracPadded.length; i += 3)
-    fracGroups.push(fracPadded.slice(i, i + 3));
-
-  const intDigits = intGroups.map((g) => parseInt(g, 2).toString(8));
-  const fracDigits = fracGroups.map((g) => parseInt(g, 2).toString(8));
-
-  const integerDigitsFromTable = intDigits.join("").replace(/^0+/, "") || "0";
-  const fractionalDigitsFromTable = fracDigits.join("");
-  const combinedFromTables = fractionalDigitsFromTable
-    ? `${integerDigitsFromTable}.${fractionalDigitsFromTable}`
-    : integerDigitsFromTable;
+  // Recap values (use magnitude so fractional matches final truncation/trim)
+  const magnitude = result.magnitude || "";
+  const [magInt = "", magFrac = ""] = magnitude.split(".");
 
   return (
-    <Section title="Conversión Binario → Octal">
+    <Section title="Conversión Octal → Binario">
       <div className="text-sm text-muted-foreground mb-2">
-        1) Parte entera (agrupar en 3 bits):
+        1) Parte entera (expandir 3 bits por dígito):
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border text-xs">
           <thead>
             <tr className="bg-muted/50">
-              <th className="px-2 py-1 border">Grupo binario</th>
-              <th className="px-2 py-1 border">→ octal</th>
+              <th className="px-2 py-1 border">Octal</th>
+              <th className="px-2 py-1 border">→ binario (3 bits)</th>
             </tr>
           </thead>
           <tbody>
-            {intGroups.map((g, i) => (
+            {intPairs.map((p, i) => (
               <tr key={i}>
-                <td className="px-2 py-1 border text-center font-mono">{g}</td>
                 <td className="px-2 py-1 border text-center font-mono">
-                  {parseInt(g, 2).toString(8)}
+                  {p.ch}
+                </td>
+                <td className="px-2 py-1 border text-center font-mono">
+                  {p.bin}
                 </td>
               </tr>
             ))}
@@ -67,31 +54,31 @@ export function BinaryToOctalSteps({ result }: StepsProps) {
       <div className="mt-3 text-xs">
         <div className="text-muted-foreground">Parte entera obtenida:</div>
         <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
-          {integerDigitsFromTable}
+          {magInt}
         </code>
       </div>
 
-      {fracGroups.length > 0 && (
+      {fracPairs.length > 0 && (
         <div className="mt-4">
           <div className="text-sm text-muted-foreground mb-2">
-            2) Parte fraccionaria (agrupar en 3 bits):
+            2) Parte fraccionaria (expandir 3 bits por dígito):
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border text-xs">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="px-2 py-1 border">Grupo binario</th>
-                  <th className="px-2 py-1 border">→ octal</th>
+                  <th className="px-2 py-1 border">Octal</th>
+                  <th className="px-2 py-1 border">→ binario (3 bits)</th>
                 </tr>
               </thead>
               <tbody>
-                {fracGroups.map((g, i) => (
+                {fracPairs.map((p, i) => (
                   <tr key={i}>
                     <td className="px-2 py-1 border text-center font-mono">
-                      {g}
+                      {p.ch}
                     </td>
                     <td className="px-2 py-1 border text-center font-mono">
-                      {parseInt(g, 2).toString(8)}
+                      {p.bin}
                     </td>
                   </tr>
                 ))}
@@ -103,19 +90,19 @@ export function BinaryToOctalSteps({ result }: StepsProps) {
               Parte fraccionaria obtenida:
             </div>
             <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
-              {fractionalDigitsFromTable || "0"}
+              {magFrac || "0"}
             </code>
           </div>
         </div>
       )}
 
-      {fractionalDigitsFromTable && (
+      {magFrac && (
         <div className="mt-4 text-xs">
           <div className="text-sm text-muted-foreground mb-2">
             3) Unión de partes:
           </div>
           <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
-            {combinedFromTables}
+            {magnitude}
           </code>
         </div>
       )}
@@ -126,7 +113,7 @@ export function BinaryToOctalSteps({ result }: StepsProps) {
             4) Aplicar signo negativo:
           </div>
           <code className="font-mono border rounded px-2 py-1 inline-block mt-1 whitespace-pre-wrap w-full break-words">
-            -{combinedFromTables}
+            -{magnitude}
           </code>
         </div>
       )}
