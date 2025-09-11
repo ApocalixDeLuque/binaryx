@@ -381,7 +381,7 @@ export function decimalToHexadecimal(
     const N = BigInt(absIntStr);
     // Bit length of magnitude
     const magnitudeBits = Math.max(1, N.toString(2).length);
-    const isPow2 = (N & (N - 1n)) === 0n;
+    const isPow2 = (N & (N - BigInt(1))) === BigInt(0);
     // Minimal signed bits k such that N <= 2^(k-1)
     const requiredSignedBits = isPow2 ? magnitudeBits : magnitudeBits + 1;
     const requiredBytes = Math.ceil(requiredSignedBits / 8);
