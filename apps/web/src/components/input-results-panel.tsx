@@ -729,10 +729,10 @@ export function InputResultsPanel({
                   </div>
                 );
                 return (
-                  <>
+                  <div className="flex flex-col gap-4">
                     <Table title="Big endian" arr={big} />
                     <Table title="Little endian" arr={little} />
-                  </>
+                  </div>
                 );
               })()}
             </div>
