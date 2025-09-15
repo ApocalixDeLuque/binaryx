@@ -1,67 +1,3 @@
-/* "use client";
-
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-
-export default function Home() {
-  return (
-    <main className="min-h-screen bg-background text-foreground">
-      <section className="container mx-auto max-w-5xl px-6 py-24 text-center">
-        <div className="flex justify-center mb-6">
-          <Image
-            src="/favicon/binaryx.png"
-            alt="binaryx"
-            width={48}
-            height={48}
-            className="h-12 w-12 dark:invert"
-            priority
-          />
-        </div>
-        <h1 className="text-4xl md:text-6xl font-semibold tracking-tight">
-          binaryx
-        </h1>
-        <p className="mt-4 text-sm md:text-base text-muted-foreground">
-          Herramientas abiertas para conversiones entre bases y aritmética
-          binaria. Minimalista, precisa y en evolución constante.
-        </p>
-
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <Button asChild>
-            <Link href="/conversiones">Ir a Conversiones</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/operaciones">Ir a Operaciones</Link>
-          </Button>
-        </div>
-      </section>
-
-      <section className="container mx-auto max-w-5xl px-6 pb-24 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="border p-4 rounded">
-          <h3 className="font-medium">Conversiones exactas</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Decimal, binario, octal y hexadecimal con soporte de fracciones,
-            redondeo y agrupado visual.
-          </p>
-        </div>
-        <div className="border p-4 rounded">
-          <h3 className="font-medium">Con signo (C2)</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Complemento a dos inteligente: solo cuando aplica, con endianness y
-            ancho mínimo.
-          </p>
-        </div>
-        <div className="border p-4 rounded">
-          <h3 className="font-medium">Código abierto</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Proyecto open source pensado para crecer: puertas lógicas,
-            aritmética extendida y más próximamente.
-          </p>
-        </div>
-      </section>
-    </main>
-  );
-} */
 "use client";
 
 import Link from "next/link";
@@ -96,7 +32,7 @@ export default function Home() {
               alt="binaryx"
               width={56}
               height={56}
-              className="h-14 w-14 dark:invert"
+              className="h-14 w-14 invert"
               priority
             />
             <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-white">
@@ -107,10 +43,10 @@ export default function Home() {
               binaria. Minimalista, precisa y en evolución constante.
             </p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild className="text-white">
+              <Button asChild className="text-white dark:text-black">
                 <Link href="/operaciones">Ir a Operaciones</Link>
               </Button>
-              <Button asChild className="text-white">
+              <Button asChild className="text-white dark:text-black">
                 <Link href="/conversiones">Ir a Conversiones</Link>
               </Button>
               <Button variant="ghost" asChild className="text-white">
