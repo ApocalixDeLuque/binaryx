@@ -123,6 +123,16 @@ export function ConversionResultsPanel({
       ? result.signedResult || ""
       : result.output;
 
+  // Show selector for bin→dec only when no explicit '-' and MSB of integer part is 1
+  const showBinToDecSelector = (() => {
+    if (result.inputBase !== "binary" || result.outputBase !== "decimal")
+      return false;
+    if (result.input.trim().startsWith("-")) return false;
+    const mag = (result.magnitude || "").toString();
+    const intPart = (mag.split(".")[0] || "");
+    return intPart.startsWith("1");
+  })();
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-3">
@@ -139,9 +149,7 @@ export function ConversionResultsPanel({
               />
             )}
 
-          {result.inputBase === "binary" &&
-            result.outputBase === "decimal" &&
-            !result.input.trim().startsWith("-") && (
+          {showBinToDecSelector && (
               <ResultSelector
                 value={viewMode}
                 onChange={(v) => setViewMode(v as "unsigned" | "signed")}
@@ -187,7 +195,9 @@ export function ConversionResultsPanel({
             viewMode={
               result.input.trim().startsWith("-")
                 ? "signed"
-                : (viewMode as "unsigned" | "signed")
+                : (showBinToDecSelector
+                    ? (viewMode as "unsigned" | "signed")
+                    : "unsigned")
             }
           />
         )}

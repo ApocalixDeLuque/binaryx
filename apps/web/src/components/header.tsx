@@ -1,26 +1,17 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
-import { Monitor, Sun, Moon } from "lucide-react";
+import ThemeSwitch from "@/components/theme-switch";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
 export default function Header() {
   const links = [
-    { to: "/", label: "Operaciones" },
     { to: "/conversiones", label: "Conversiones" },
+    { to: "/operaciones", label: "Operaciones" },
   ] as const;
   const pathname = usePathname();
 
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // Prevent hydration mismatch by only rendering theme-dependent content after mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Theme handled by ThemeSwitch
 
   return (
     <header className="border-b sticky top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -56,70 +47,7 @@ export default function Header() {
 
         {/* Right: theme */}
         <div className="flex items-center gap-3">
-          <div className="flex" role="tablist" aria-label="Theme">
-            {mounted ? (
-              <>
-                <Button
-                  variant={theme === "system" ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setTheme("system")}
-                  className="rounded-r-none"
-                  aria-label="System theme"
-                >
-                  <Monitor className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={theme === "light" ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setTheme("light")}
-                  className="rounded-none"
-                  aria-label="Light theme"
-                >
-                  <Sun className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={theme === "dark" ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setTheme("dark")}
-                  className="rounded-l-none"
-                  aria-label="Dark theme"
-                >
-                  <Moon className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              // Fallback buttons with default styling during SSR
-              <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-r-none"
-                  aria-label="System theme"
-                  disabled
-                >
-                  <Monitor className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-none"
-                  aria-label="Light theme"
-                  disabled
-                >
-                  <Sun className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-l-none"
-                  aria-label="Dark theme"
-                  disabled
-                >
-                  <Moon className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
+          <ThemeSwitch />
         </div>
       </div>
     </header>

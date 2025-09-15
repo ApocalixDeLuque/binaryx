@@ -89,7 +89,10 @@ export function binaryToDecimal(
     fractionalSteps.push({ value: parseFloat("0." + fractionalPart), bit: -1 });
     for (let i = 0; i < fractionalPart.length; i++) {
       const bit = parseInt(fractionalPart[i]);
-      fractionalSteps.push({ value: parseFloat("0." + fractionalPart.slice(i)), bit });
+      fractionalSteps.push({
+        value: parseFloat("0." + fractionalPart.slice(i)),
+        bit,
+      });
     }
 
     const totalBN = new BigNumber(intBigInt.toString()).plus(fracBN);
@@ -176,7 +179,8 @@ export function binaryToDecimal(
       if (leadingOne) {
         if (useBigInt) {
           signedDecimal =
-            (unsignedDecimal as bigint) - (BigInt(1) << BigInt(integerBitLength));
+            (unsignedDecimal as bigint) -
+            (BigInt(1) << BigInt(integerBitLength));
         } else {
           signedDecimal =
             (unsignedDecimal as number) - Math.pow(2, integerBitLength);

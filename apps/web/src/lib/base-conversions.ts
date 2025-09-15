@@ -86,7 +86,10 @@ export interface ConversionResult {
  */
 export function decimalToOctal(decimal: number | BigNumber): ConversionResult {
   const steps: ConversionStep[] = [];
-  const integerSteps: Array<{ quotient: number | BigNumber; remainder: number }> = [];
+  const integerSteps: Array<{
+    quotient: number | BigNumber;
+    remainder: number;
+  }> = [];
   const fractionalSteps: Array<{ value: number; bit: number }> = [];
 
   // Handle BigNumber input
@@ -278,7 +281,10 @@ export function decimalToHexadecimal(
   decimal: number | BigNumber
 ): ConversionResult {
   const steps: ConversionStep[] = [];
-  const integerSteps: Array<{ quotient: number | BigNumber; remainder: number }> = [];
+  const integerSteps: Array<{
+    quotient: number | BigNumber;
+    remainder: number;
+  }> = [];
   const fractionalSteps: Array<{ value: number; bit: number }> = [];
 
   // Handle BigNumber input
@@ -376,7 +382,9 @@ export function decimalToHexadecimal(
   if (shouldUseLargeFormat && isNegative) {
     // Determine minimal standard width (16, 32, 64, 128, ...) that can hold |value| in C2
     const absIntStr = isBigNumber
-      ? (decimalValue as BigNumber).integerValue(BigNumber.ROUND_DOWN).toString()
+      ? (decimalValue as BigNumber)
+          .integerValue(BigNumber.ROUND_DOWN)
+          .toString()
       : Math.trunc(decimalValue as number).toString();
     const N = BigInt(absIntStr);
     // Bit length of magnitude
@@ -411,7 +419,6 @@ export function decimalToHexadecimal(
   if (isNegative && magnitude !== "0") {
     signedResult = "-" + magnitude;
   }
-
 
   return {
     input: decimal.toString(),
@@ -480,7 +487,8 @@ export function hexadecimalToDecimal(hex: string): ConversionResult {
   const total = intBN.plus(fracBN);
 
   // Unsigned result string (fixed 20 fractional digits if fractional)
-  const finalUnsignedStr = fracRaw.length > 0 ? total.toFixed(20) : total.toFixed();
+  const finalUnsignedStr =
+    fracRaw.length > 0 ? total.toFixed(20) : total.toFixed();
 
   // Signed (two's complement) interpretation
   let signedBN = total;
@@ -501,7 +509,8 @@ export function hexadecimalToDecimal(hex: string): ConversionResult {
     signedBN = total;
   }
 
-  const finalSignedStr = fracRaw.length > 0 ? signedBN.toFixed(20) : signedBN.toFixed();
+  const finalSignedStr =
+    fracRaw.length > 0 ? signedBN.toFixed(20) : signedBN.toFixed();
   const isNegative = signedBN.isNegative();
 
   return {
@@ -529,30 +538,44 @@ export function binaryToOctal(binary: string): ConversionResult {
   const [intRaw, fracRaw = ""] = unsigned.split(".");
 
   // Pad integer (left) and fractional (right) to multiples of 3
-  const padLeft = (s: string) => (s.length % 3 === 0 ? s : s.padStart(s.length + (3 - (s.length % 3)), "0"));
-  const padRight = (s: string) => (s.length % 3 === 0 ? s : s.padEnd(s.length + (3 - (s.length % 3)), "0"));
+  const padLeft = (s: string) =>
+    s.length % 3 === 0 ? s : s.padStart(s.length + (3 - (s.length % 3)), "0");
+  const padRight = (s: string) =>
+    s.length % 3 === 0 ? s : s.padEnd(s.length + (3 - (s.length % 3)), "0");
 
   const intPadded = padLeft(intRaw || "0");
   const fracPadded = fracRaw ? padRight(fracRaw) : "";
 
   const intGroups: string[] = [];
-  for (let i = 0; i < intPadded.length; i += 3) intGroups.push(intPadded.slice(i, i + 3));
+  for (let i = 0; i < intPadded.length; i += 3)
+    intGroups.push(intPadded.slice(i, i + 3));
   const fracGroups: string[] = [];
-  for (let i = 0; i < fracPadded.length; i += 3) fracGroups.push(fracPadded.slice(i, i + 3));
+  for (let i = 0; i < fracPadded.length; i += 3)
+    fracGroups.push(fracPadded.slice(i, i + 3));
 
   const intOct = intGroups.map((g, idx) => {
     const d = parseInt(g, 2).toString(8);
-    steps.push({ step: steps.length + 1, input: g, operation: "bin→oct", output: d });
+    steps.push({
+      step: steps.length + 1,
+      input: g,
+      operation: "bin→oct",
+      output: d,
+    });
     return d;
   });
   const fracOct = fracGroups.map((g, idx) => {
     const d = parseInt(g, 2).toString(8);
-    steps.push({ step: steps.length + 1, input: g, operation: "bin→oct", output: d });
+    steps.push({
+      step: steps.length + 1,
+      input: g,
+      operation: "bin→oct",
+      output: d,
+    });
     return d;
   });
 
   // Join and normalize integer part (remove leading zeros but leave at least one)
-  const intJoined = (intOct.join("").replace(/^0+/, "") || "0");
+  const intJoined = intOct.join("").replace(/^0+/, "") || "0";
   const fracJoined = fracOct.join("");
   const magnitude = fracJoined ? `${intJoined}.${fracJoined}` : intJoined;
   const signed = isNegative ? `-${magnitude}` : magnitude;
@@ -586,7 +609,12 @@ export function octalToBinary(octal: string): ConversionResult {
   for (let i = 0; i < (intRaw || "0").length; i++) {
     const ch = intRaw[i] || "0";
     const bin = toBin3(ch);
-    steps.push({ step: steps.length + 1, input: ch, operation: "oct→bin", output: bin });
+    steps.push({
+      step: steps.length + 1,
+      input: ch,
+      operation: "oct→bin",
+      output: bin,
+    });
     intGroups.push(bin);
   }
 
@@ -594,7 +622,12 @@ export function octalToBinary(octal: string): ConversionResult {
   for (let i = 0; i < fracRaw.length; i++) {
     const ch = fracRaw[i];
     const bin = toBin3(ch);
-    steps.push({ step: steps.length + 1, input: ch, operation: "oct→bin", output: bin });
+    steps.push({
+      step: steps.length + 1,
+      input: ch,
+      operation: "oct→bin",
+      output: bin,
+    });
     fracGroups.push(bin);
   }
 
@@ -632,33 +665,47 @@ export function binaryToHexadecimal(binary: string): ConversionResult {
   const [intRaw, fracRaw = ""] = unsigned.split(".");
 
   // Padding helpers (4-bit nibble)
-  const padLeft = (s: string) => (s.length % 4 === 0 ? s : s.padStart(s.length + (4 - (s.length % 4)), "0"));
-  const padRight = (s: string) => (s.length % 4 === 0 ? s : s.padEnd(s.length + (4 - (s.length % 4)), "0"));
+  const padLeft = (s: string) =>
+    s.length % 4 === 0 ? s : s.padStart(s.length + (4 - (s.length % 4)), "0");
+  const padRight = (s: string) =>
+    s.length % 4 === 0 ? s : s.padEnd(s.length + (4 - (s.length % 4)), "0");
 
   const intPadded = padLeft(intRaw || "0");
   const fracPadded = fracRaw ? padRight(fracRaw) : "";
 
   const intGroups: string[] = [];
-  for (let i = 0; i < intPadded.length; i += 4) intGroups.push(intPadded.slice(i, i + 4));
+  for (let i = 0; i < intPadded.length; i += 4)
+    intGroups.push(intPadded.slice(i, i + 4));
   const fracGroups: string[] = [];
-  for (let i = 0; i < fracPadded.length; i += 4) fracGroups.push(fracPadded.slice(i, i + 4));
+  for (let i = 0; i < fracPadded.length; i += 4)
+    fracGroups.push(fracPadded.slice(i, i + 4));
 
   const hexChars = "0123456789ABCDEF";
   const intHex = intGroups.map((g, idx) => {
     const d = parseInt(g, 2);
     const h = hexChars[d];
-    steps.push({ step: steps.length + 1, input: g, operation: "bin→hex", output: h });
+    steps.push({
+      step: steps.length + 1,
+      input: g,
+      operation: "bin→hex",
+      output: h,
+    });
     return h;
   });
   const fracHex = fracGroups.map((g, idx) => {
     const d = parseInt(g, 2);
     const h = hexChars[d];
-    steps.push({ step: steps.length + 1, input: g, operation: "bin→hex", output: h });
+    steps.push({
+      step: steps.length + 1,
+      input: g,
+      operation: "bin→hex",
+      output: h,
+    });
     return h;
   });
 
   // Normalize integer (remove leading zeros but preserve 0)
-  const intJoined = (intHex.join("").replace(/^0+/, "") || "0");
+  const intJoined = intHex.join("").replace(/^0+/, "") || "0";
   const fracJoined = fracHex.join("");
   const magnitude = fracJoined ? `${intJoined}.${fracJoined}` : intJoined;
   const signed = isNegative ? `-${magnitude}` : magnitude;
@@ -687,13 +734,19 @@ export function hexadecimalToBinary(hex: string): ConversionResult {
   const [intRaw, fracRaw = ""] = unsigned.split(".");
 
   // Map each hex digit to 4-bit binary
-  const toBinary4 = (h: string): string => parseInt(h, 16).toString(2).padStart(4, "0");
+  const toBinary4 = (h: string): string =>
+    parseInt(h, 16).toString(2).padStart(4, "0");
 
   const intGroups: string[] = [];
   for (let i = 0; i < intRaw.length; i++) {
     const ch = intRaw[i];
     const bin = toBinary4(ch);
-    steps.push({ step: steps.length + 1, input: ch.toUpperCase(), operation: "hex→bin", output: bin });
+    steps.push({
+      step: steps.length + 1,
+      input: ch.toUpperCase(),
+      operation: "hex→bin",
+      output: bin,
+    });
     intGroups.push(bin);
   }
 
@@ -701,7 +754,12 @@ export function hexadecimalToBinary(hex: string): ConversionResult {
   for (let i = 0; i < fracRaw.length; i++) {
     const ch = fracRaw[i];
     const bin = toBinary4(ch);
-    steps.push({ step: steps.length + 1, input: ch.toUpperCase(), operation: "hex→bin", output: bin });
+    steps.push({
+      step: steps.length + 1,
+      input: ch.toUpperCase(),
+      operation: "hex→bin",
+      output: bin,
+    });
     fracGroups.push(bin);
   }
 
@@ -713,7 +771,11 @@ export function hexadecimalToBinary(hex: string): ConversionResult {
   // Remove trailing zeros in fractional part
   fracJoined = fracJoined.replace(/0+$/, "");
 
-  const magnitude = fracRaw ? (fracJoined ? `${intJoined}.${fracJoined}` : intJoined) : intJoined;
+  const magnitude = fracRaw
+    ? fracJoined
+      ? `${intJoined}.${fracJoined}`
+      : intJoined
+    : intJoined;
   const output = isNegative ? `-${magnitude}` : magnitude;
 
   return {
@@ -816,17 +878,31 @@ export function hexadecimalToOctal(hex: string): ConversionResult {
 
   const intOctDigits = intTriads.map((g) => {
     const d = parseInt(g, 2).toString(8);
-    steps.push({ step: steps.length + 1, input: g, operation: "bin→oct", output: d });
+    steps.push({
+      step: steps.length + 1,
+      input: g,
+      operation: "bin→oct",
+      output: d,
+    });
     return d;
   });
   let fracOctDigits = fracTriads.map((g) => {
     const d = parseInt(g, 2).toString(8);
-    steps.push({ step: steps.length + 1, input: g, operation: "bin→oct", output: d });
+    steps.push({
+      step: steps.length + 1,
+      input: g,
+      operation: "bin→oct",
+      output: d,
+    });
     return d;
   });
   // If padding introduced a trailing zero digit, drop it
-  const padCount = ((3 - (fracBinRaw.length % 3)) % 3);
-  if (padCount > 0 && fracOctDigits.length > 0 && fracOctDigits[fracOctDigits.length - 1] === "0") {
+  const padCount = (3 - (fracBinRaw.length % 3)) % 3;
+  if (
+    padCount > 0 &&
+    fracOctDigits.length > 0 &&
+    fracOctDigits[fracOctDigits.length - 1] === "0"
+  ) {
     fracOctDigits = fracOctDigits.slice(0, -1);
   }
 
@@ -1052,7 +1128,12 @@ export function convertBetweenBases(
   if (useGrouping) {
     // For octal/hexadecimal to binary conversions, don't apply standard binary grouping here
     // Keep it as continuous binary; UI (FormattedNumber) will handle base-aware grouping correctly
-    if (!((fromBase === "octal" || fromBase === "hexadecimal") && toBase === "binary")) {
+    if (
+      !(
+        (fromBase === "octal" || fromBase === "hexadecimal") &&
+        toBase === "binary"
+      )
+    ) {
       result.output = formatWithGrouping(result.output, toBase);
     }
     // Don't format the input - keep it as originally entered

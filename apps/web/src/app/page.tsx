@@ -100,24 +100,22 @@ export default function Home() {
               priority
             />
             <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-white">
-              Herramientas para Números y Bits
+              binaryx
             </h1>
-            <p className="max-w-2xl text-sm md:text-base text-white opacity-80">
-              binaryx es un proyecto open source para conversiones entre bases y
-              aritmética binaria. Enfoque minimalista, precisión y una UX clara.
-              — Creciendo hacia puertas lógicas, operaciones aritméticas
-              extendidas y más.
+            <p className="text-sm md:text-base text-white opacity-80 max-w-md">
+              Herramientas abiertas para conversiones entre bases y aritmética
+              binaria. Minimalista, precisa y en evolución constante.
             </p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild>
+              <Button asChild className="text-white">
                 <Link href="/operaciones">Ir a Operaciones</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="text-white">
                 <Link href="/conversiones">Ir a Conversiones</Link>
               </Button>
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" asChild className="text-white">
                 <Link
-                  href="https://github.com/"
+                  href="https://github.com/ApocalixDeLuque/binaryx"
                   target="_blank"
                   rel="noreferrer"
                 >

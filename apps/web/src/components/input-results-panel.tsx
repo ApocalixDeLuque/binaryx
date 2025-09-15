@@ -445,11 +445,14 @@ export function InputResultsPanel({
   const inputIsNegative = getInputSign(input);
   // Show secondary result when:
   // - decimal→binary and input is negative (C2)
-  // - binary→decimal and no explicit '-' (interpret as unsigned and signed)
-  // - decimal→hexadecimal always show both (unsigned + C2 if negative)
+  // - binary→decimal and no explicit '-' AND MSB of integer part is 1 (C2 applies)
+  // - decimal→hexadecimal only for pure integers (unsigned + C2 if negative)
+  const binUnsigned = inputClean.replace(/^-/, "");
+  const binIntPart = (binUnsigned.split(".")[0] || "");
+  const binMsbIsOne = isBinaryToDecimal && binIntPart.length > 0 && binIntPart[0] === "1";
   const showSecondaryResult =
     (isDecimalToBinary && inputIsNegative) ||
-    (isBinaryToDecimal && !inputIsNegative) ||
+    (isBinaryToDecimal && !inputIsNegative && binMsbIsOne) ||
     (isHexToDecimal && !inputIsNegative && !hexHasFraction) ||
     (isDecimalToHex && !decimalHasFraction);
 

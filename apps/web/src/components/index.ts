@@ -10,11 +10,6 @@ export { ConversionResultsPanel } from "./conversion-results-panel";
 export { InputResultsPanel } from "./input-results-panel";
 
 // Sidebar components
-export {
-  BaseSelection,
-  ConfigurationPanel,
-  ExamplesPanel,
-  ExportPanel,
-} from "./sidebar";
+export { BaseSelection } from "./sidebar";
 
 // Conversion components

@@ -6,12 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calculator } from "lucide-react";
 
 // Import sidebar components
-import {
-  BaseSelection,
-  ConfigurationPanel,
-  ExamplesPanel,
-  ExportPanel,
-} from "@/components/sidebar";
+import { BaseSelection } from "@/components/sidebar";
 
 // Import input/results component
 import { InputResultsPanel } from "@/components/input-results-panel";

@@ -7,11 +7,4 @@
 // Base selection component
 export { BaseSelection } from "./base-selection";
 
-// Configuration panel component
-export { ConfigurationPanel } from "./configuration-panel";
-
-// Examples panel component (placeholder)
-export { ExamplesPanel } from "./examples-panel";
-
-// Export/Share panel component (placeholder)
-export { ExportPanel } from "./export-panel";
+// Note: other sidebar panels were removed during migration
