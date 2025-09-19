@@ -22,7 +22,8 @@
 </p>
 <!-- prettier-ignore-end -->
 
-> [!NOTE] > **Status: active.** This project aims to grow with the community (digital logic, more operations, visualizations, etc.).
+> [!NOTE]
+> **Status: active.** This project aims to grow with the community (digital logic, more operations, visualizations, etc.).
 
 ---
 

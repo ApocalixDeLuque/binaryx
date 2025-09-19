@@ -32,7 +32,7 @@ Document any extra steps (env vars, local config) in the README.
 
 ## Pull request process
 
-1. Ensure CI passes (tests, lint).
+1. Run lint, tests, and build locally before opening the PR.
 2. Update docs and CHANGELOG if behavior changes.
 3. Fill out the PR template (summary, testing steps, screenshots if UI).
 4. At least one maintainer review approval is required before merge.
