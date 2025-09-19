@@ -32,7 +32,7 @@ Documenta pasos extra (variables de entorno, configuración local) en el README.
 
 ## Proceso de Pull Request
 
-1. Asegura que CI pase (tests, lint).
+1. Ejecuta lint, pruebas y build en local antes del PR.
 2. Actualiza docs y CHANGELOG si cambia el comportamiento.
 3. Completa la plantilla de PR (resumen, pasos de prueba, capturas si hay UI).
 4. Se requiere aprobación de al menos una persona mantenedora antes del merge.
