@@ -86,7 +86,7 @@ export default function Footer() {
           <div className="grid w-full gap-2 sm:grid-cols-2 md:w-auto md:flex md:flex-wrap md:justify-end md:gap-2">
             {primaryActions.map(({ label, href, icon: Icon, variant }) => (
               <Button key={label} asChild variant={variant} size="sm" className="w-full md:w-auto">
-                <Link href={href} target="_blank" rel="noreferrer">
+                <Link href={href as any} target="_blank" rel="noreferrer">
                   <Icon className="size-4" aria-hidden="true" />
                   {label}
                 </Link>
@@ -103,7 +103,7 @@ export default function Footer() {
             {secondaryLinks.map(({ label, href }) => (
               <Link
                 key={label}
-                href={href}
+                href={href as any}
                 target="_blank"
                 rel="noreferrer"
                 className="transition-colors hover:text-foreground"
