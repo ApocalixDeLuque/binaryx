@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Security reports
+  - name: Reportes de seguridad
     url: https://github.com/ApocalixDeLuque/binaryx/security/advisories
-    about: Please report security vulnerabilities privately via GitHub Security Advisories or email in SECURITY.md.
+    about: Reporta vulnerabilidades de forma privada mediante GitHub Security Advisories o el correo indicado en SECURITY.md.

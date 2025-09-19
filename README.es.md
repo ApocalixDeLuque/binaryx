@@ -22,7 +22,8 @@
 </p>
 <!-- prettier-ignore-end -->
 
-> [!NOTE] > **Estado: activo.** Este proyecto busca crecer en comunidad (lógica digital, más operaciones, visualizaciones, etc.).
+> [!NOTE]
+> **Estado: activo.** Este proyecto busca crecer en comunidad (lógica digital, más operaciones, visualizaciones, etc.).
 
 ---
 

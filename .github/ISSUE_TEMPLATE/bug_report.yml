@@ -1,43 +1,43 @@
-name: "Bug report"
-description: "Report a reproducible problem"
+name: "Reporte de bug"
+description: "Reporta un problema reproducible"
 labels: ["bug"]
 body:
   - type: input
     id: summary
     attributes:
-      label: Summary
-      description: Short description of the bug.
-      placeholder: "Incorrect grouping on decimal fraction in binary→decimal"
+      label: Resumen
+      description: Explica brevemente el problema.
+      placeholder: "Agrupación incorrecta en fracción decimal al convertir binario → decimal"
     validations: { required: true }
 
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      description: Provide minimal steps.
+      label: Pasos para reproducir
+      description: Detalla los pasos mínimos para provocar el bug.
       placeholder: |
-        1) Go to /conversiones
-        2) Input: 1010001011001.00010010 (binary) → decimal
-        3) Observe fraction formatted incorrectly
+        1) Ir a /conversiones
+        2) Ingresar: 1010001011001.00010010 (binario) → decimal
+        3) Observar que la fracción se formatea de forma incorrecta
     validations: { required: true }
 
   - type: textarea
     id: expected_actual
     attributes:
-      label: Expected vs. actual
+      label: Comportamiento esperado vs. actual
       placeholder: |
-        Expected: ...
+        Esperado: ...
         Actual: ...
     validations: { required: true }
 
   - type: textarea
     id: context
     attributes:
-      label: Additional context / logs / screenshots
-      placeholder: "Screenshots, logs, links…"
+      label: Contexto adicional / logs / capturas
+      placeholder: "Capturas de pantalla, registros, enlaces relevantes…"
 
   - type: input
     id: env
     attributes:
-      label: Environment
-      placeholder: "OS/Browser, versions (e.g., macOS 14.5 / Firefox 142)"
+      label: Entorno
+      placeholder: "SO/Navegador, versiones (p. ej. macOS 14.5 / Firefox 142)"

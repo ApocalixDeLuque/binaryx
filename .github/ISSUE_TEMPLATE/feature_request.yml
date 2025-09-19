@@ -1,30 +1,30 @@
-name: "Feature request"
-description: "Propose an enhancement or new capability"
+name: "Solicitud de mejora"
+description: "Propone una funcionalidad o mejora"
 labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Problem / use case
-      placeholder: "Add Decimal ↔ Gray code with step visualization…"
+      label: Problema / caso de uso
+      placeholder: "Necesitamos conversión Decimal ↔ Gray con visualización paso a paso…"
     validations: { required: true }
 
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
-      placeholder: "Create results components under src/components/results/gray-<->binary, add steps and final, wire in panel…"
+      label: Propuesta de solución
+      placeholder: "Crear componentes en src/components/results/gray-<->binary, añadir pasos y resultado final, integrar en el panel…"
     validations: { required: true }
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
-      placeholder: "External tool X, manual steps, etc."
+      label: Alternativas consideradas
+      placeholder: "Herramienta externa X, pasos manuales, etc."
 
   - type: dropdown
     id: priority
     attributes:
-      label: Priority
-      options: ["nice to have", "important", "critical"]
+      label: Prioridad
+      options: ["sería genial", "importante", "crítico"]
       default: 0

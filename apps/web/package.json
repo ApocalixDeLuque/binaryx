@@ -69,6 +69,9 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^4.1.10",
     "typescript": "^5",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "jsdom": "^24.1.0",
+    "@types/jsdom": "^21.1.7",
+    "vite": "^5.4.10"
   }
 }
