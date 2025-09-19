@@ -17,7 +17,7 @@ import { formatDecimalOutput } from "../utils/formatting-utils";
  */
 export function decimalToBinary(
   decimal: number | BigNumberType,
-  specifiedBits?: number
+  specifiedBits?: number,
 ): ConversionResult {
   // Handle BigNumber input
   const isBigNumber = decimal instanceof BigNumber;
@@ -43,9 +43,7 @@ export function decimalToBinary(
     while (quotient.gt(0)) {
       const remainder = quotient.mod(2).toNumber();
       integerSteps.push({
-        quotient: quotient.gt(Number.MAX_SAFE_INTEGER)
-          ? quotient
-          : quotient.toNumber(),
+        quotient: quotient.gt(Number.MAX_SAFE_INTEGER) ? quotient : quotient.toNumber(),
         remainder,
       });
       remainders.unshift(remainder.toString());
@@ -210,8 +208,7 @@ export function validateDecimalInput(input: string): {
   if (!/^-?\d+(\.\d+)?$/.test(input.trim())) {
     return {
       isValid: false,
-      error:
-        "Formato decimal inválido. Use solo números y punto decimal opcional.",
+      error: "Formato decimal inválido. Use solo números y punto decimal opcional.",
     };
   }
 

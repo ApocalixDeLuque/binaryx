@@ -82,7 +82,6 @@ export function SidebarConfig({
         const raw = localStorage.getItem(`binaryx_disclosure_${id}`);
         if (raw != null) setOpen(raw === "1");
       } catch {}
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     React.useEffect(() => {
       try {
