@@ -15,9 +15,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const defaultTitle = "binaryx";
+const defaultDescription = "binaryx";
+const socialImagePath = "/binaryx_bg.png";
+
 export const metadata: Metadata = {
-  title: "binaryx",
-  description: "binaryx",
+  title: defaultTitle,
+  description: defaultDescription,
+  openGraph: {
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [
+      {
+        url: socialImagePath,
+        alt: defaultTitle,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [socialImagePath],
+  },
 };
 
 export default function RootLayout({
