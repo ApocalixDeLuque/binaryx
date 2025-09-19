@@ -1,0 +1,30 @@
+name: "Feature request"
+description: "Propose an enhancement or new capability"
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      placeholder: "Add Decimal ↔ Gray code with step visualization…"
+    validations: { required: true }
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: "Create results components under src/components/results/gray-<->binary, add steps and final, wire in panel…"
+    validations: { required: true }
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: "External tool X, manual steps, etc."
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: ["nice to have", "important", "critical"]
+      default: 0

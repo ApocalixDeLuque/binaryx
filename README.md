@@ -1,111 +1,127 @@
-# binaryx — Conversión de bases y aritmética binaria
+<!-- prettier-ignore-start -->
+<p align="center">
+  <img src="apps/web/public/favicon/binaryx.png" alt="binaryx logo" width="96" height="96">
+</p>
 
-Herramientas minimalistas, precisas y explicativas para trabajar con números en distintas bases. Incluye pasos detallados de cada conversión, soporte de fracciones, reglas de redondeo por base, complemento a dos (C2) cuando corresponde, y representación por endianness.
+<h1 align="center">binaryx — Base conversion & binary math</h1>
 
-> Estado: activo. Este proyecto está pensado para crecer en comunidad (lógica digital, más operaciones, visualizaciones, etc.).
+<p align="center">
+  Minimal, precise, and explanatory tools for working with numbers across bases.
+  Includes step-by-step conversions, fraction support, base-aware rounding,
+  two's complement (C2) when appropriate, and endianness views.
+</p>
 
----
+<p align="center">
+  <a href="#license"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg"></a>
+  <a href="https://github.com/ApocalixDeLuque/binaryx/issues"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
+  <a href="#status"><img alt="Status: active" src="https://img.shields.io/badge/status-active-success.svg"></a>
+</p>
 
-## Índice
+<p align="center">
+  <a href="README.es.md">🇪🇸 Versión en Español</a>
+</p>
+<!-- prettier-ignore-end -->
 
-- [binaryx — Conversión de bases y aritmética binaria](#binaryx--conversión-de-bases-y-aritmética-binaria)
-  - [Índice](#índice)
-  - [Características](#características)
-  - [Rutas y navegación](#rutas-y-navegación)
-  - [Cómo correrlo localmente](#cómo-correrlo-localmente)
-    - [Requisitos](#requisitos)
-    - [Instalación](#instalación)
-    - [Desarrollo](#desarrollo)
-    - [Build y producción](#build-y-producción)
-    - [Pruebas](#pruebas)
-  - [Modelo y arquitectura](#modelo-y-arquitectura)
-    - [Estructura relevante](#estructura-relevante)
-    - [Flujo de conversión](#flujo-de-conversión)
-  - [Conversores y reglas](#conversores-y-reglas)
-    - [Decimal → Binario](#decimal--binario)
-    - [Binario → Decimal](#binario--decimal)
-    - [Decimal → Octal](#decimal--octal)
-    - [Decimal → Hexadecimal](#decimal--hexadecimal)
-    - [Binario → Octal / Hexadecimal](#binario--octal--hexadecimal)
-    - [Hexadecimal ↔ Binario](#hexadecimal--binario)
-    - [Octal ↔ Binario / Decimal / Hexadecimal](#octal--binario--decimal--hexadecimal)
-  - [Complemento a dos (C2)](#complemento-a-dos-c2)
-    - [Cuándo aplica](#cuándo-aplica)
-    - [Ancho mínimo en Decimal → Hexadecimal](#ancho-mínimo-en-decimal--hexadecimal)
-    - [Interpretación firmada en Hexadecimal → Decimal](#interpretación-firmada-en-hexadecimal--decimal)
-    - [Endianness](#endianness)
-  - [Precisión y redondeo](#precisión-y-redondeo)
-  - [Estándares de código](#estándares-de-código)
-  - [Contribuir](#contribuir)
-    - [Sugerencias de mejora](#sugerencias-de-mejora)
-  - [Reporte de bugs y soporte](#reporte-de-bugs-y-soporte)
-  - [Seguridad](#seguridad)
-  - [Licencia](#licencia)
+> [!NOTE] > **Status: active.** This project aims to grow with the community (digital logic, more operations, visualizations, etc.).
 
 ---
 
-## Características
+## Table of Contents
 
-- Conversión entre bases con pasos explicados (tablas para entero/fracción, recap y unión).
-- Soporte de fracciones con 20 dígitos decimales fijos en salidas decimales.
-- Redondeo por dígito siguiente basado en la base (p. ej., en hex se redondea si el próximo dígito es ≥ 8).
-- Complemento a dos (C2) con reglas correctas (solo cuando corresponde) y con ancho mínimo en dec→hex negativo.
-- Endianness por bytes (Big/Little) para representaciones C2.
-- UI clara y responsiva. Selector “Con signo” aparece solo cuando tiene sentido.
-- Código abierto, modular y con precisión (BigNumber) para fracciones y enteros grandes.
-
-## Rutas y navegación
-
-- `/` — Landing page, CTA y secciones de características.
-- `/conversiones` — Panel de conversiones con entrada, resultados y pasos.
-- `/operaciones` — Operaciones y visualizaciones (sumas/restas, Booth para enteros, punto fijo para fraccionarios).
+- [Table of Contents](#table-of-contents)
+- [Features](#features)
+- [Routes](#routes)
+- [Getting Started](#getting-started)
+  - [Requirements](#requirements)
+  - [Install](#install)
+  - [Develop](#develop)
+  - [Build \& Run](#build--run)
+  - [Tests](#tests)
+- [Model \& Architecture](#model--architecture)
+  - [Relevant Structure](#relevant-structure)
+  - [Conversion Flow](#conversion-flow)
+- [Converters \& Rules](#converters--rules)
+  - [Decimal → Binary](#decimal--binary)
+  - [Binary → Decimal](#binary--decimal)
+  - [Decimal → Octal](#decimal--octal)
+  - [Decimal → Hex](#decimal--hex)
+  - [Binary → Octal / Hex](#binary--octal--hex)
+  - [Hex ↔ Binary](#hex--binary)
+  - [Octal ↔ Binary / Decimal / Hex](#octal--binary--decimal--hex)
+- [Two’s Complement (C2)](#twos-complement-c2)
+  - [When it applies](#when-it-applies)
+  - [Minimum width in Decimal → Hex](#minimum-width-in-decimal--hex)
+  - [Signed interpretation in Hex → Decimal](#signed-interpretation-in-hex--decimal)
+  - [Endianness](#endianness)
+- [Precision \& Rounding](#precision--rounding)
+- [Code Standards](#code-standards)
+- [Contributing](#contributing)
+- [Bug Reports \& Support](#bug-reports--support)
+- [Security](#security)
+- [Source link (AGPL §13)](#source-link-agpl-13)
+- [Status](#status)
+- [License](#license)
 
 ---
 
-## Cómo correrlo localmente
+## Features
 
-### Requisitos
+- Stepwise base conversions (separate integer/fraction tables, recap & join).
+- Fraction support with fixed 20 decimal digits in decimal outputs.
+- **Base-aware rounding** (e.g., in hex round if next digit ≥ 8).
+- **Two’s complement (C2)** only when appropriate (see rules), with **minimum byte width** for negative dec→hex.
+- **Endianness** views by byte (Big/Little) for C2 representations.
+- Clean, responsive UI; **“Signed”** toggle appears only when it makes sense.
+- Modular code and BigNumber precision for large integers & fractions.
 
-- Bun 1.1+ (recomendado) o Node.js 18.18+
-- pnpm o npm si no usas Bun
+## Routes
 
-### Instalación
+- `/` — Landing page with CTA and features.
+- `/conversiones` — Conversion panel with input, results, and steps.
+- `/operaciones` — Operations & visualizations (sums/subtractions, Booth for integers, fixed-point for fractional).
 
-Clona el repo y instala dependencias (monorepo con Turbo):
+---
+
+## Getting Started
+
+### Requirements
+
+- **Bun 1.1+** (recommended) or **Node.js 18.18+**
+- `pnpm` or `npm` if you don’t use Bun
+
+### Install
 
 ```bash
 bun install
-# o
+# or
 pnpm install
 ```
 
-### Desarrollo
-
-Ejecuta solo la app web (Next.js) en modo dev:
+### Develop
 
 ```bash
-# desde la raíz
+# from repo root
 bun run dev:web
-# o
+# or
 cd apps/web && bun run dev
 ```
 
-Abre http://localhost:3001
+Open http://localhost:3001
 
-### Build y producción
+### Build & Run
 
 ```bash
-# build de todo (turborepo)
+# build all (turborepo)
 bun run build
 
-# iniciar solo la app web
+# run only the web app
 cd apps/web
 bun run start
 ```
 
-### Pruebas
+### Tests
 
-La configuración de Vitest está en `apps/web/vitest.config.ts`.
+Vitest config lives in `apps/web/vitest.config.ts`:
 
 ```bash
 cd apps/web
@@ -114,183 +130,207 @@ bunx vitest
 
 ---
 
-## Modelo y arquitectura
+## Model & Architecture
 
-- Framework: Next.js 15 (App Router) + React 19
-- Precisión: BigNumber (fracciones y enteros grandes)
-- UI: componentes modulares por conversión, y un orquestador de resultados
+- Framework: **Next.js 15 (App Router)** + **React 19**
+- Precision: **BigNumber** (fractions & large integers)
+- UI: modular conversion components + a results orchestrator
 
-### Estructura relevante
+### Relevant Structure
 
 ```
 apps/web/src/app/
-  page.tsx                 # Landing
+  page.tsx
   (routes)/conversiones/page.tsx
   (routes)/operaciones/page.tsx
 
 apps/web/src/components/
-  conversion-results-panel.tsx   # Orquesta vistas de resultados
-  input-results-panel.tsx        # Entrada + resultados
+  conversion-results-panel.tsx   # orchestrates result views
+  input-results-panel.tsx        # input + results
   results/<conv>/{summary,analysis,steps,final}.tsx
-  theme-switch.tsx               # Conmutador claro/oscuro/sistema
-  LetterGlitch.tsx               # Fondo animado del hero
+  theme-switch.tsx
+  LetterGlitch.tsx
 
 apps/web/src/lib/
-  base-conversions.ts            # Núcleo de conversiones
-  utils/*                        # tipos, helpers, formateo, etc.
+  base-conversions.ts            # conversion core
+  utils/*                        # types, helpers, formatting, etc.
 ```
 
-### Flujo de conversión
+### Conversion Flow
 
-1. Validación de entrada por base.
-2. Conversión con funciones puras (entero/fracción por separado cuando aplica).
-3. Generación de `ConversionResult` con:
-   - `magnitude` (sin signo), `output` (string), `signedResult?`, `twosComplementHex?`
-   - pasos `integerSteps?`/`fractionalSteps?`
-4. La UI decide mostrar “Sin signo/Con signo” y endianness según reglas.
+1. Input validation by base.
+2. Conversion with pure functions (integer/fraction split when applicable).
+3. Produce a `ConversionResult` with:
+   - `magnitude` (unsigned), `output` (string), `signedResult?`, `twosComplementHex?`
+   - steps `integerSteps?` / `fractionalSteps?`
+4. UI decides whether to show “Unsigned/Signed” and endianness based on rules.
 
 ---
 
-## Conversores y reglas
+## Converters & Rules
 
-### Decimal → Binario
+### Decimal → Binary
 
-- Enteros: división sucesiva entre 2, remainders invertidos al final.
-- Fracciones: multiplicación por 2 guardando el bit; se computan 20+1 bits para definir redondeo (si el siguiente bit es 1, se redondea; acarrea al entero si corresponde).
-- Signos:
-  - Positivo o negativo con signo explícito: la vista “Sin signo” solo antepone `-` a la magnitud.
-  - “Con signo (C2)” sólo para negativos explícitos.
+- Integers: successive division by 2, reverse remainders.
+- Fractions: multiply by 2 storing bits; compute 20+1 bits to decide rounding (if next bit is `1`, round; carry into integer if needed).
+- Signs:
+  - Positive or negative (explicit sign): **Unsigned** view only prepends `-` to magnitude.
+  - **“Signed (C2)”** only for explicit negatives.
 
-### Binario → Decimal
+### Binary → Decimal
 
-- Posicional: suma de `bit × 2^n` para entero; para fracciones, `bit × 2^-k` con BigNumber.
-- Vista “Con signo (C2)” disponible cuando:
-  - No hay `-` explícito y el MSB del entero es `1` (intepretación firmada).
+- Positional: `bit × 2^n` for integer; `bit × 2^-k` for fractions with BigNumber.
+- **“Signed (C2)”** view available when:
+  - No explicit `-` **and** the integer MSB is `1` (signed interpretation).
 
 ### Decimal → Octal
 
-- Entero: división sucesiva por 8; fracción: multiplicación por 8 (+ redondeo base‑8 si el siguiente dígito ≥ 4).
-- Signos: solo se antepone `-` en la vista sin signo; no hay C2 en octal.
+- Integer: divide by 8; fraction: multiply by 8 (+ base-8 rounding if next digit ≥ 4).
+- Signs: only prepend `-` in unsigned view; **no C2 in octal**.
 
-### Decimal → Hexadecimal
+### Decimal → Hex
 
-- Entero: división por 16; fracción: multiplicación por 16 con redondeo base‑16 (siguiente dígito ≥ 8).
-- Signos:
-  - Positivos y fracciones: NO se calcula C2.
-  - Negativos enteros: se calcula C2 con ancho mínimo necesario en bytes (múltiplo de 8 y potencia de 2; mínimo 16 bits). El resultado C2 se muestra en mayúsculas.
-- Endianness: tabla Big/Little endian por bytes (sin `00` líderes superfluos en la tabla).
+- Integer: divide by 16; fraction: multiply by 16 with base-16 rounding (next digit ≥ 8).
+- Signs:
+  - Positives & fractions: **no C2**.
+  - **Negative integers**: compute **C2** with minimum **byte** width (power of 2; **min 16 bits**). C2 output is uppercase.
+- Endianness: Big/Little-endian by bytes (**display omits leading `00` rows** for clarity; actual value remains unchanged).
 
-### Binario → Octal / Hexadecimal
+### Binary → Octal / Hex
 
-- Agrupación por bloques: 3 bits → octal, 4 bits → hex. Para fracciones se agrupa hacia la derecha.
+- Grouping: 3 bits → octal, 4 bits → hex. For fractions, group to the right.
 
-### Hexadecimal ↔ Binario
+### Hex ↔ Binary
 
-- Expansión/contracción por nibbles (4 bits por dígito hex). Recorta ceros líderes/trailing según corresponda.
+- Expand/contract by nibbles (4 bits per hex digit). Trim leading/trailing zeros where appropriate.
 
-### Octal ↔ Binario / Decimal / Hexadecimal
+### Octal ↔ Binary / Decimal / Hex
 
-- Vía agrupación a 3 bits o posición en potencias de 8 para decimal.
+- Via 3-bit grouping (octal) or powers of 8 for decimal.
 
 ---
 
-## Complemento a dos (C2)
+## Two’s Complement (C2)
 
-### Cuándo aplica
+### When it applies
 
-- Nunca para positivos.
-- Nunca para fracciones.
-- Aplica en:
-  - Decimal → Hexadecimal si el decimal es negativo y entero.
-  - Hexadecimal → Decimal (modo “Con signo”) si NO hay `-` explícito, es entero y el nibble más significativo (MS) ≥ 8.
+- **Never** for positives.
+- **Never** for fractions.
+- Applies in:
+  - **Decimal → Hex** when the decimal is **negative** and **integer**.
+  - **Hex → Decimal** (“Signed” mode) when there’s **no explicit `-`**, it’s **integer**, and the **MS nibble ≥ 8**.
 
-### Ancho mínimo en Decimal → Hexadecimal
+### Minimum width in Decimal → Hex
 
-- Se usa el menor ancho en bytes (potencia de 2) que puede representar `|N|` en C2; mínimo 16 bits.
-- Ejemplos:
+- Use the **smallest byte width (power of 2)** that can represent `|N|` in C2; **min 16 bits**.
+- Examples:
   - `-20` → `FFEC`
   - `-276` → `FEEC`
   - `-2076` → `F7E4`
   - `-9999` → `D8F1`
   - `-999999` → `FFF0BDC1`
 
-### Interpretación firmada en Hexadecimal → Decimal
+### Signed interpretation in Hex → Decimal
 
-- Si el MS nibble ≥ 8 (y la entrada es entera sin `-`), el modo “Con signo (C2)” realiza:
-  1. `-1` a la palabra
-  2. Invertir nibbles (15 − dígito)
-  3. Sumar 1 (conceptualmente) → magnitud
-  4. Convertir a decimal y aplicar `-` a la magnitud resultante
-- Los pasos en UI muestran explícitamente la tabla de inversión.
+- If MS nibble ≥ 8 (and input is integer without `-`), **Signed (C2)** does:
+  1. subtract 1
+  2. invert nibbles (`15 − digit`)
+  3. conceptually add 1 → magnitude
+  4. convert to decimal, then prefix `-`
+- UI shows the inversion table explicitly.
 
 ### Endianness
 
-- Cuando se presenta C2 (dec→hex negativo), se muestran bytes en Big y Little endian.
-- Se omiten bytes `00` líderes en la tabla para claridad (no se alteran los bytes reales del valor C2 publicado).
+- When showing C2 (dec→hex negative), render byte tables for Big/Little endian.
+- Omit **superfluous** leading `00` rows (value itself is unchanged).
 
 ---
 
-## Precisión y redondeo
+## Precision & Rounding
 
-- BigNumber configura decimales altos y evita notación científica.
-- Fracciones en decimal: 20 dígitos fijos para estabilidad visual.
-- Redondeo por base:
-  - base‑2: siguiente bit `1` redondea la última posición guardada (con acarreo al entero si aplica)
-  - base‑8: siguiente dígito ≥ 4
-  - base‑16: siguiente dígito ≥ 8
-
----
-
-## Estándares de código
-
-- TypeScript estricto, React 19, Next 15.
-- Lógica pura sin efectos colaterales y separada de la UI.
-- Nombres claros; evita abreviaturas crípticas.
-- Formateo y agrupado de dígitos en la UI (no en la lógica).
+- BigNumber avoids scientific notation and preserves high precision.
+- Decimal fractions: **fixed 20 digits** for visual stability.
+- Base-aware rounding:
+  - base-2: next bit `1` rounds the last kept position (carry to integer if needed)
+  - base-8: next digit ≥ 4
+  - base-16: next digit ≥ 8
 
 ---
 
-## Contribuir
+## Code Standards
 
-¡Contribuciones bienvenidas! Algunas pautas:
-
-- **Commits**: usa Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
-- **PRs**: explica problema, solución, impacto y añade pruebas/capturas si aplica.
-- **Pruebas**: cubre límites (C2, redondeo, grandes magnitudes). No rompas el “gating” de C2.
-- **Estilo**: respeta decisiones de precisión, UX y reglas de C2 (positivos y fracciones no llevan C2).
-
-### Sugerencias de mejora
-
-- Más familias de conversión (BCD, Gray, base‑N arbitraria)
-- Visualizaciones (overflow, timelines de acarreo, bit‑flip)
-- Lógica digital (puertas, tablas de verdad, circuitos)
-- Internacionalización de la UI
+- Strict TypeScript, React 19, Next.js 15.
+- Pure logic separated from UI.
+- Clear names; avoid cryptic abbreviations.
+- Grouping/formatting of digits is a **UI** task (not core logic).
 
 ---
 
-## Reporte de bugs y soporte
+## Contributing
 
-Abre un issue incluyendo:
+See [CONTRIBUTING](CONTRIBUTING.md). We follow **Conventional Commits** and welcome:
 
-- Conversión (de → a), entrada exacta, si hay `-`, si hay fracción
-- Resultado esperado vs. obtenido (y por qué)
-- Navegador/SO y capturas/logs si ayudan
-- Pasos mínimos para reproducir
+- Bug reports with minimal repro
+- Feat proposals with clear use-cases
+- Docs and tests
 
-Para solicitudes de funcionalidad: explica el caso de uso, alcance e impacto.
-
----
-
-## Seguridad
-
-No publiques detalles explotables en issues públicos. Si encuentras un problema de seguridad, por favor notifícalo por un canal privado (email o mensaje directo) para coordinar una respuesta responsable.
+> [!TIP]
+> Good places to contribute: rounding edge cases, C2 gating, large magnitudes, visualization components.
 
 ---
 
-## Licencia
+## Bug Reports & Support
 
-Este proyecto es open source. La elección de licencia está pendiente de confirmación (MIT o Apache‑2.0 son opciones comunes). Si deseas que se publique una licencia específica, abre un issue o PR.
+When opening an issue, include:
+
+- Conversion path (from → to), exact input (with/without `-`, with/without fraction)
+- Expected vs. actual (and why)
+- Browser/OS + screenshots/logs if helpful
+- Minimal steps to reproduce
+
+Feature requests: describe use case, scope, and impact.
 
 ---
 
-¿Dudas o ideas? ¡Abre un issue y conversemos!
+## Security
+
+Please **do not** disclose exploitable details in public issues. Follow [SECURITY](SECURITY.md) for private reporting.
+
+---
+
+## Source link (AGPL §13)
+
+If you deploy binaryx as a network service, expose a visible **“Source”** link in the UI pointing to this repository (and ideally the current commit).
+
+Minimal example for a footer component:
+
+```tsx
+// apps/web/src/components/SourceLink.tsx
+"use client";
+export default function SourceLink() {
+  const sha = process.env.NEXT_PUBLIC_GIT_SHA ?? "main";
+  return (
+    <a
+      href={`https://github.com/ApocalixDeLuque/binaryx/tree/${sha}`}
+      target="_blank"
+      rel="noreferrer"
+      className="underline hover:no-underline"
+      aria-label="View source code on GitHub"
+    >
+      Source
+    </a>
+  );
+}
+```
+
+---
+
+## Status
+
+**Active** — roadmap includes BCD/Gray/base-N, overflow viz, bit-flip timelines, and digital logic (gates, truth tables, circuits).
+
+---
+
+## License
+
+**AGPL-3.0**. See [LICENSE](LICENSE).

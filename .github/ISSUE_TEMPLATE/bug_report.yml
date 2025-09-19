@@ -1,0 +1,43 @@
+name: "Bug report"
+description: "Report a reproducible problem"
+labels: ["bug"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the bug.
+      placeholder: "Incorrect grouping on decimal fraction in binary→decimal"
+    validations: { required: true }
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide minimal steps.
+      placeholder: |
+        1) Go to /conversiones
+        2) Input: 1010001011001.00010010 (binary) → decimal
+        3) Observe fraction formatted incorrectly
+    validations: { required: true }
+
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected vs. actual
+      placeholder: |
+        Expected: ...
+        Actual: ...
+    validations: { required: true }
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context / logs / screenshots
+      placeholder: "Screenshots, logs, links…"
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "OS/Browser, versions (e.g., macOS 14.5 / Firefox 142)"
