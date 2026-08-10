@@ -1,3 +1,5 @@
+
+
 <!-- prettier-ignore-start -->
 <p align="center">
   <img src="apps/web/public/favicon/binaryx.png" alt="binaryx logo" width="96" height="96">
@@ -323,6 +325,8 @@ export default function SourceLink() {
   );
 }
 ```
+
+> **Note:** Ensure `NEXT_PUBLIC_GIT_SHA` is set in your build environment (e.g., `NEXT_PUBLIC_GIT_SHA=$(git rev-parse --short HEAD) bun run build`) so the link points to the exact deployed commit.
 
 ---
 
