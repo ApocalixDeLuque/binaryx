@@ -1,5 +1,3 @@
-
-
 <!-- prettier-ignore-start -->
 <p align="center">
   <img src="apps/web/public/favicon/binaryx.png" alt="binaryx logo" width="96" height="96">
