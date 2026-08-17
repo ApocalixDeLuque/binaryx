@@ -17,7 +17,7 @@ import { formatDecimalOutput } from "../utils/formatting-utils";
  */
 export function decimalToBinary(
   decimal: number | BigNumberType,
-  specifiedBits?: number,
+  _specifiedBits?: number,
 ): ConversionResult {
   // Handle BigNumber input
   const isBigNumber = decimal instanceof BigNumber;
@@ -54,28 +54,7 @@ export function decimalToBinary(
     magnitude = "0";
   }
 
-  // Step 2: Determine bit width - adapt based on minimum required
-  let bitWidth: number;
-  if (specifiedBits) {
-    bitWidth = specifiedBits;
-  } else {
-    // For BigNumbers, estimate bit width from string length
-    const estimatedBits = isBigNumber
-      ? bigDecimal.toString(2).length
-      : Math.ceil(Math.log2(Math.abs(bigDecimal.toNumber()) + 1));
-
-    // For negative numbers, use the same bit width as positive (two's complement handles the sign)
-    bitWidth = Math.max(estimatedBits, magnitude.length);
-    // Ensure minimum 8-bit alignment for readability
-    bitWidth = Math.max(bitWidth, 8);
-  }
-
-  // Don't pad small results - use natural binary representation
-  // Only pad very large numbers if needed for readability
-  // (This preserves the natural binary length for small numbers)
-
   // Fractional part conversion with BigNumber precision (dynamic length)
-  let fractionalResult = "";
   if (hasFractionalPart) {
     const intPartBN = absValue.integerValue(BigNumber.ROUND_DOWN);
     let fracBN = absValue.minus(intPartBN);
@@ -97,7 +76,7 @@ export function decimalToBinary(
       fracBN = fracBN.minus(bitBN);
     }
 
-    fractionalResult = bits.join("");
+    const fractionalResult = bits.join("");
     if (fractionalResult) magnitude += "." + fractionalResult;
   }
 

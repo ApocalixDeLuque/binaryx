@@ -120,7 +120,7 @@ export function decimalToOctal(decimal: number | BigNumber): ConversionResult {
   let magnitude = remainders.join("") || "0";
 
   // Fractional part conversion using BigNumber for precision
-  let fractionalResult = "";
+  let fractionalResult: string;
   if (hasFractionalPart) {
     // Extract fractional part as BigNumber precisely
     const intPart = absValue.integerValue(BigNumber.ROUND_DOWN);
@@ -316,7 +316,7 @@ export function decimalToHexadecimal(
   let magnitude = remainders.join("") || "0";
 
   // Fractional part conversion using BigNumber for precision (20 digits)
-  let fractionalResult = "";
+  let fractionalResult: string;
   if (hasFractionalPart) {
     const intPart = absValue.integerValue(BigNumber.ROUND_DOWN);
     let fracPart = absValue.minus(intPart);
