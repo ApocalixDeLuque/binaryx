@@ -4,7 +4,7 @@
   "private": true,
   "license": "AGPL-3.0",
   "scripts": {
-    "dev": "next dev --turbopack --port=3001",
+    "dev": "next dev --port=3001",
     "build": "next build",
     "start": "next start"
   },
@@ -46,12 +46,12 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.542.0",
-    "next": "16.2.2",
+    "next": "16.3.1",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.2",
-    "react": "^19.0.0",
+    "react": "19.2.8",
     "react-day-picker": "^9.9.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "19.2.8",
     "react-hook-form": "^7.62.0",
     "react-resizable-panels": "^3.0.5",
     "recharts": "2.15.4",
@@ -64,14 +64,14 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.10",
     "@tanstack/react-query-devtools": "^5.85.5",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^24.3.1",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "jsdom": "^24.1.0",
     "tailwindcss": "^4.1.10",
     "typescript": "^5",
-    "vitest": "^3.2.4",
-    "jsdom": "^24.1.0",
-    "@types/jsdom": "^21.1.7",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "vitest": "^3.2.4"
   }
 }
