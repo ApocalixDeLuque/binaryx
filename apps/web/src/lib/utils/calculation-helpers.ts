@@ -1,5 +1,3 @@
-import BigNumber from "bignumber.js";
-
 /**
  * Calculation helpers for number conversions
  */
@@ -20,9 +18,7 @@ export function calculateMinBits(decimal: number): number {
 /**
  * Get base name in Spanish
  */
-export function getBaseName(
-  base: "binary" | "decimal" | "octal" | "hexadecimal"
-): string {
+export function getBaseName(base: "binary" | "decimal" | "octal" | "hexadecimal"): string {
   switch (base) {
     case "binary":
       return "Binario";
@@ -32,17 +28,17 @@ export function getBaseName(
       return "Octal";
     case "hexadecimal":
       return "Hexadecimal";
-    default:
-      return base;
+    default: {
+      const exhaustiveCheck: never = base;
+      throw new Error(`Base no compatible: ${exhaustiveCheck}`);
+    }
   }
 }
 
 /**
  * Get the base number for a base type
  */
-export function getBaseNumber(
-  base: "binary" | "decimal" | "octal" | "hexadecimal"
-): number {
+export function getBaseNumber(base: "binary" | "decimal" | "octal" | "hexadecimal"): number {
   switch (base) {
     case "binary":
       return 2;
@@ -52,8 +48,10 @@ export function getBaseNumber(
       return 8;
     case "hexadecimal":
       return 16;
-    default:
-      return 10;
+    default: {
+      const exhaustiveCheck: never = base;
+      throw new Error(`Base no compatible: ${exhaustiveCheck}`);
+    }
   }
 }
 
@@ -62,7 +60,7 @@ export function getBaseNumber(
  */
 export function validateInput(
   input: string,
-  base: "binary" | "decimal" | "octal" | "hexadecimal"
+  base: "binary" | "decimal" | "octal" | "hexadecimal",
 ): boolean {
   const cleanInput = input.trim();
 
@@ -75,8 +73,10 @@ export function validateInput(
       return /^-?[0-7]+(\.[0-7]+)?$/.test(cleanInput);
     case "hexadecimal":
       return /^-?[0-9A-Fa-f]+(\.[0-9A-Fa-f]+)?$/.test(cleanInput);
-    default:
-      return false;
+    default: {
+      const exhaustiveCheck: never = base;
+      throw new Error(`Base no compatible: ${exhaustiveCheck}`);
+    }
   }
 }
 
@@ -85,7 +85,7 @@ export function validateInput(
  */
 export function getValidationError(
   input: string,
-  base: "binary" | "decimal" | "octal" | "hexadecimal"
+  base: "binary" | "decimal" | "octal" | "hexadecimal",
 ): string {
   switch (base) {
     case "binary":
@@ -96,7 +96,9 @@ export function getValidationError(
       return "La entrada octal debe contener solo dígitos 0-7, con punto decimal opcional";
     case "hexadecimal":
       return "La entrada hexadecimal debe contener solo dígitos hexadecimales válidos, con punto decimal opcional";
-    default:
-      return "Entrada inválida";
+    default: {
+      const exhaustiveCheck: never = base;
+      throw new Error(`Base no compatible: ${exhaustiveCheck}`);
+    }
   }
 }

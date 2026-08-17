@@ -1,10 +1,5 @@
 import BigNumber from "bignumber.js";
-import type {
-  ConversionResult,
-  ConversionStep,
-  BaseType,
-  BigNumberType,
-} from "../utils/conversion-types";
+import type { ConversionResult, ConversionStep } from "../utils/conversion-types";
 import { formatDecimalOutput } from "../utils/formatting-utils";
 
 /**
@@ -15,24 +10,24 @@ import { formatDecimalOutput } from "../utils/formatting-utils";
 /**
  * Convert binary to decimal using positional weighting
  */
-export function binaryToDecimal(
-  binary: string,
-  specifiedBits?: number
-): ConversionResult {
+export function binaryToDecimal(binary: string, specifiedBits?: number): ConversionResult {
   // Clean the input by removing spaces
   const cleanBinary = binary.replace(/\s/g, "");
   const isExplicitlyNegative = cleanBinary.startsWith("-");
-  const binaryWithoutSign = isExplicitlyNegative
-    ? cleanBinary.slice(1)
-    : cleanBinary;
-  const actualBits = binaryWithoutSign.length;
-  const bitWidth = specifiedBits || actualBits;
+  const binaryWithoutSign = isExplicitlyNegative ? cleanBinary.slice(1) : cleanBinary;
+  const [integerPart, fractionalPart = ""] = binaryWithoutSign.split(".");
+  const actualBits = integerPart.length + fractionalPart.length;
+  const shouldInterpretTwosComplement =
+    !isExplicitlyNegative &&
+    specifiedBits !== undefined &&
+    specifiedBits === actualBits &&
+    integerPart.startsWith("1");
   const steps: ConversionStep[] = [];
   const integerSteps: Array<{ quotient: number; remainder: number }> = [];
   const fractionalSteps: Array<{ value: number; bit: number }> = [];
 
   // For large binary numbers (> 53 bits), use BigInt to avoid precision loss
-  const useBigInt = binaryWithoutSign.length > 53;
+  const useBigInt = integerPart.length > 53;
 
   let decimal: number | bigint = 0;
   let unsignedBN: BigNumber | null = null;
@@ -41,8 +36,6 @@ export function binaryToDecimal(
 
   if (hasFractionalPart) {
     // Handle fractional binary precisely using BigNumber
-    const [integerPart, fractionalPart] = binaryWithoutSign.split(".");
-
     // Convert integer part contributions (for steps) and accumulate using BigInt first
     let intBigInt = BigInt(0);
     for (let i = 0; i < integerPart.length; i++) {
@@ -112,12 +105,10 @@ export function binaryToDecimal(
           operation: "Convert to BigInt",
           output: bigIntValue.toString(),
         });
-      } catch (error) {
+      } catch {
         // Fallback to regular conversion if BigInt fails
         for (let i = 0; i < Math.min(binaryWithoutSign.length, 53); i++) {
-          const bit = parseInt(
-            binaryWithoutSign[binaryWithoutSign.length - 1 - i]
-          );
+          const bit = parseInt(binaryWithoutSign[binaryWithoutSign.length - 1 - i]);
           const power = Math.pow(2, i);
           const contribution = bit * power;
 
@@ -134,9 +125,7 @@ export function binaryToDecimal(
     } else {
       // Regular conversion for smaller numbers
       for (let i = 0; i < binaryWithoutSign.length; i++) {
-        const bit = parseInt(
-          binaryWithoutSign[binaryWithoutSign.length - 1 - i]
-        );
+        const bit = parseInt(binaryWithoutSign[binaryWithoutSign.length - 1 - i]);
         const power = Math.pow(2, i);
         const contribution = bit * power;
 
@@ -153,7 +142,6 @@ export function binaryToDecimal(
   }
 
   // Compute unsigned and signed (two's complement) interpretations
-  const [integerPart, fractionalPart = ""] = binaryWithoutSign.split(".");
   const integerBitLength = integerPart.length || 0;
   const unsignedDecimal = decimal;
 
@@ -163,27 +151,20 @@ export function binaryToDecimal(
     if (isExplicitlyNegative) {
       signedBN = unsignedBN.negated();
     } else {
-      const leadingOne = integerPart.startsWith("1");
-      signedBN = leadingOne
+      signedBN = shouldInterpretTwosComplement
         ? unsignedBN.minus(new BigNumber(2).exponentiatedBy(integerBitLength))
         : unsignedBN;
     }
     signedDecimal = signedBN.toNumber();
   } else {
     if (isExplicitlyNegative) {
-      signedDecimal = useBigInt
-        ? -(unsignedDecimal as bigint)
-        : -(unsignedDecimal as number);
+      signedDecimal = useBigInt ? -(unsignedDecimal as bigint) : -(unsignedDecimal as number);
     } else {
-      const leadingOne = integerPart.startsWith("1");
-      if (leadingOne) {
+      if (shouldInterpretTwosComplement) {
         if (useBigInt) {
-          signedDecimal =
-            (unsignedDecimal as bigint) -
-            (BigInt(1) << BigInt(integerBitLength));
+          signedDecimal = (unsignedDecimal as bigint) - (BigInt(1) << BigInt(integerBitLength));
         } else {
-          signedDecimal =
-            (unsignedDecimal as number) - Math.pow(2, integerBitLength);
+          signedDecimal = (unsignedDecimal as number) - Math.pow(2, integerBitLength);
         }
       } else {
         signedDecimal = unsignedDecimal;
@@ -201,17 +182,12 @@ export function binaryToDecimal(
     return formatDecimalOutput(val);
   };
 
-  const finalUnsignedStr = unsignedBN
-    ? unsignedBN.toFixed(20)
-    : renderDecimal(unsignedDecimal, hasFractionalPart);
   const finalSignedStr = ((): string => {
     if (signedBN) return signedBN.toFixed(20);
     return renderDecimal(signedDecimal, hasFractionalPart);
   })();
   const isNegative =
-    typeof signedDecimal === "bigint"
-      ? signedDecimal < BigInt(0)
-      : (signedDecimal as number) < 0;
+    typeof signedDecimal === "bigint" ? signedDecimal < BigInt(0) : (signedDecimal as number) < 0;
 
   const flags = {
     sign: isNegative,
@@ -224,7 +200,7 @@ export function binaryToDecimal(
   return {
     input: binary,
     inputBase: "binary",
-    output: finalUnsignedStr,
+    output: finalSignedStr,
     outputBase: "decimal",
     steps,
     hasFractionalPart,
@@ -301,8 +277,7 @@ export function calculateTwosComplement(binary: string): {
     // For smaller numbers, use regular arithmetic
     const maxValue = Math.pow(2, bitLength);
     const unsignedValue = parseInt(cleanBinary, 2);
-    const signedValue =
-      unsignedValue >= maxValue / 2 ? unsignedValue - maxValue : unsignedValue;
+    const signedValue = unsignedValue >= maxValue / 2 ? unsignedValue - maxValue : unsignedValue;
     return {
       unsigned: unsignedValue.toString(),
       signed: signedValue.toString(),
