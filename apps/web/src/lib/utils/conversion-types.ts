@@ -1,3 +1,5 @@
+import type BigNumber from "bignumber.js";
+
 /**
  * Type definitions for conversion operations
  */
@@ -41,8 +43,5 @@ export interface ConversionOptions {
   decimalToBinaryBits?: number;
   binaryToDecimalBits?: number;
 }
-
-// Import BigNumber from bignumber.js for type compatibility
-import BigNumber from "bignumber.js";
 
 export type BigNumberType = BigNumber;

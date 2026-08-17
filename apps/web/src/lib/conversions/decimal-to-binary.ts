@@ -1,11 +1,5 @@
 import BigNumber from "bignumber.js";
-import type {
-  ConversionResult,
-  ConversionStep,
-  BaseType,
-  BigNumberType,
-} from "../utils/conversion-types";
-import { formatDecimalOutput } from "../utils/formatting-utils";
+import type { ConversionResult, ConversionStep, BigNumberType } from "../utils/conversion-types";
 
 /**
  * Decimal to Binary Conversion Operations
@@ -20,8 +14,7 @@ export function decimalToBinary(
   specifiedBits?: number,
 ): ConversionResult {
   // Handle BigNumber input
-  const isBigNumber = decimal instanceof BigNumber;
-  const bigDecimal = isBigNumber ? decimal : new BigNumber(decimal);
+  const bigDecimal = decimal instanceof BigNumber ? decimal : new BigNumber(decimal);
 
   const steps: ConversionStep[] = [];
   const integerSteps: Array<{
@@ -54,28 +47,7 @@ export function decimalToBinary(
     magnitude = "0";
   }
 
-  // Step 2: Determine bit width - adapt based on minimum required
-  let bitWidth: number;
-  if (specifiedBits) {
-    bitWidth = specifiedBits;
-  } else {
-    // For BigNumbers, estimate bit width from string length
-    const estimatedBits = isBigNumber
-      ? bigDecimal.toString(2).length
-      : Math.ceil(Math.log2(Math.abs(bigDecimal.toNumber()) + 1));
-
-    // For negative numbers, use the same bit width as positive (two's complement handles the sign)
-    bitWidth = Math.max(estimatedBits, magnitude.length);
-    // Ensure minimum 8-bit alignment for readability
-    bitWidth = Math.max(bitWidth, 8);
-  }
-
-  // Don't pad small results - use natural binary representation
-  // Only pad very large numbers if needed for readability
-  // (This preserves the natural binary length for small numbers)
-
   // Fractional part conversion with BigNumber precision (dynamic length)
-  let fractionalResult = "";
   if (hasFractionalPart) {
     const intPartBN = absValue.integerValue(BigNumber.ROUND_DOWN);
     let fracBN = absValue.minus(intPartBN);
@@ -97,90 +69,74 @@ export function decimalToBinary(
       fracBN = fracBN.minus(bitBN);
     }
 
-    fractionalResult = bits.join("");
+    const fractionalResult = bits.join("");
     if (fractionalResult) magnitude += "." + fractionalResult;
   }
 
-  // Handle signed representation for negative numbers
+  // Integer results use at least 8 bits. A caller-provided width is honored
+  // unless the value needs more bits to remain representable.
   let signedResult = magnitude;
   let output = magnitude;
 
-  if (isNegative && magnitude !== "0") {
-    // For negative numbers:
-    // - output (unsigned): magnitude with negative sign
-    // - signedResult (two's complement): actual two's complement representation
-    output = "-" + magnitude;
+  if (!hasFractionalPart) {
+    const magnitudeBits = magnitude.length;
+    const isPowerOfTwo = /^10*$/.test(magnitude);
+    const requiredSignedBits = isPowerOfTwo ? magnitudeBits : magnitudeBits + 1;
+    const requiredBits = isNegative ? requiredSignedBits : magnitudeBits;
+    const bitWidth = Math.max(8, specifiedBits ?? 0, requiredBits);
 
-    // Calculate two's complement for signedResult
-    if (magnitude.includes(".")) {
-      // Fractional two's complement with dynamic fractional width
-      const [i, f = ""] = magnitude.split(".");
-      const frac = f;
-      const intWidth = i.length + 1; // pad with one extra sign bit
-      const paddedInt = i.padStart(intWidth, "0");
-
-      const invert = (s: string) =>
-        s
-          .split("")
-          .map((b) => (b === "0" ? "1" : "0"))
-          .join("");
-
-      const invInt = invert(paddedInt);
-      const invFrac = invert(frac);
-
-      // Add 1 to the entire fixed-point word (integer + fractional)
-      const joined = (invInt + invFrac).split("");
-      let carry = 1;
-      for (let k = joined.length - 1; k >= 0 && carry; k--) {
-        if (joined[k] === "0") {
-          joined[k] = "1";
-          carry = 0;
-        } else {
-          joined[k] = "0";
-        }
-      }
-      const newInt = joined.slice(0, intWidth).join("");
-      const newFrac = joined.slice(intWidth, intWidth + frac.length).join("");
-      signedResult = `${newInt}.${newFrac}`;
+    if (isNegative && magnitude !== "0") {
+      const modulus = BigInt(1) << BigInt(bitWidth);
+      const magnitudeValue = BigInt(`0b${magnitude}`);
+      signedResult = (modulus - magnitudeValue).toString(2).padStart(bitWidth, "0");
+      output = signedResult;
     } else {
-      // For integer binary, calculate proper two's complement
-      // Use minimal width such that the magnitude fits in (width - 1) bits
-      // i.e., width = magnitude bit-length + 1
-      const binaryLength = magnitude.length;
-      const width = binaryLength + 1;
-      // Pad to ensure we have enough bits for two's complement
-      const paddedBinary = magnitude.padStart(width, "0");
+      signedResult = magnitude.padStart(bitWidth, "0");
+      output = signedResult;
+    }
+  } else if (isNegative && magnitude !== "0") {
+    // Fractional two's complement with dynamic fractional width
+    const [i, f = ""] = magnitude.split(".");
+    const frac = f;
+    const intWidth = i.length + 1; // pad with one extra sign bit
+    const paddedInt = i.padStart(intWidth, "0");
 
-      // Calculate one's complement (invert all bits)
-      const inverted = paddedBinary
+    const invert = (s: string) =>
+      s
         .split("")
-        .map((bit) => (bit === "0" ? "1" : "0"))
+        .map((b) => (b === "0" ? "1" : "0"))
         .join("");
 
-      // Convert to BigInt for large numbers and add 1
-      const invertedBigInt = BigInt("0b" + inverted);
-      const twosComplementBigInt = invertedBigInt + BigInt(1);
+    const invInt = invert(paddedInt);
+    const invFrac = invert(frac);
 
-      // Convert back to binary string
-      signedResult = twosComplementBigInt.toString(2);
-
-      // Ensure proper length equals chosen width
-      if (signedResult.length < paddedBinary.length) {
-        signedResult = signedResult.padStart(paddedBinary.length, "0");
+    // Add 1 to the entire fixed-point word (integer + fractional)
+    const joined = (invInt + invFrac).split("");
+    let carry = 1;
+    for (let k = joined.length - 1; k >= 0 && carry; k--) {
+      if (joined[k] === "0") {
+        joined[k] = "1";
+        carry = 0;
+      } else {
+        joined[k] = "0";
       }
     }
+    const newInt = joined.slice(0, intWidth).join("");
+    const newFrac = joined.slice(intWidth, intWidth + frac.length).join("");
+    signedResult = `${newInt}.${newFrac}`;
+    output = signedResult;
   }
 
   const flags = {
     sign: isNegative,
-    zero: decimal === 0,
+    zero: bigDecimal.isZero(),
     overflow: false, // Could add overflow detection
   };
 
   return {
     input: decimal.toString(),
     inputBase: "decimal",
-    output, // This is the unsigned result (magnitude with sign for negative)
+    output,
     outputBase: "binary",
     steps,
     hasFractionalPart,
@@ -188,7 +144,7 @@ export function decimalToBinary(
     fractionalSteps,
     isNegative,
     magnitude, // This is the binary magnitude without sign
-    signedResult, // This is the two's complement representation
+    signedResult,
     flags,
   };
 }
