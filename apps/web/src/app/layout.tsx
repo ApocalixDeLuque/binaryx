@@ -18,8 +18,17 @@ const geistMono = Geist_Mono({
 const defaultTitle = "binaryx";
 const defaultDescription = "binaryx";
 const socialImagePath = "/binaryx_bg.png";
+const deploymentHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+const localMetadataUrl = "http://localhost:3001";
+const deploymentUrl = deploymentHost
+  ? deploymentHost.includes("://")
+    ? deploymentHost
+    : `https://${deploymentHost}`
+  : localMetadataUrl;
+const metadataBase = new URL(URL.canParse(deploymentUrl) ? deploymentUrl : localMetadataUrl);
 
 export const metadata: Metadata = {
+  metadataBase,
   title: defaultTitle,
   description: defaultDescription,
   openGraph: {
